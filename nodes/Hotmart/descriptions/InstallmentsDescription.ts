@@ -24,9 +24,7 @@ export const installmentsOperations: INodeProperties[] = [
 ];
 
 export const installmentsFields: INodeProperties[] = [
-    // ----------------------------------
-    //         Gerar Negociação
-    // ----------------------------------
+    // Gerar Negociação
     {
         displayName: 'ID da Assinatura',
         name: 'subscriptionId',

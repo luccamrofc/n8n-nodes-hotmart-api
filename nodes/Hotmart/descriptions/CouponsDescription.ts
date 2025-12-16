@@ -36,9 +36,6 @@ export const couponsOperations: INodeProperties[] = [
 ];
 
 export const couponsFields: INodeProperties[] = [
-    // ----------------------------------
-    //         Campos Comuns
-    // ----------------------------------
     {
         displayName: 'ID do Produto',
         name: 'productId',
@@ -54,9 +51,7 @@ export const couponsFields: INodeProperties[] = [
         description: 'Identificador único (ID) do produto (número de 7 dígitos)',
     },
 
-    // ----------------------------------
-    //         Criar Cupom
-    // ----------------------------------
+    // Criar Cupom
     {
         displayName: 'Código do Cupom',
         name: 'couponCode',
@@ -134,9 +129,7 @@ export const couponsFields: INodeProperties[] = [
         ],
     },
 
-    // ----------------------------------
-    //         Listar Cupons
-    // ----------------------------------
+    // Listar Cupons
     {
         displayName: 'Filtros',
         name: 'filters',
@@ -191,9 +184,7 @@ export const couponsFields: INodeProperties[] = [
         description: 'Número máximo de cupons a retornar',
     },
 
-    // ----------------------------------
-    //         Excluir Cupom
-    // ----------------------------------
+    // Excluir Cupom
     {
         displayName: 'ID do Cupom',
         name: 'couponId',

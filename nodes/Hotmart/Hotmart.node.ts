@@ -57,7 +57,7 @@ export class Hotmart implements INodeType {
             },
         ],
         properties: [
-            // Auth Mode Selector - FIRST PROPERTY
+            // Seletor de modo de autenticação
             {
                 displayName: 'Modo de Autenticação',
                 name: 'authMode',
@@ -77,7 +77,7 @@ export class Hotmart implements INodeType {
                 default: 'credentials',
                 description: 'Escolha como autenticar com a API da Hotmart',
             },
-            // Dynamic Token Fields (shown only in SaaS mode and NOT for auth resource)
+            // Campos de token dinâmico (exibidos apenas no modo SaaS)
             {
                 displayName: 'Token de Acesso',
                 name: 'accessToken',
@@ -117,7 +117,7 @@ export class Hotmart implements INodeType {
                 default: 'production',
                 description: 'O ambiente da Hotmart. IMPORTANTE: Credenciais de Produção só funcionam em Produção e vice-versa.',
             },
-            // Resource Selector
+            // Seletor de recurso
             {
                 displayName: 'Recurso',
                 name: 'resource',
@@ -155,7 +155,7 @@ export class Hotmart implements INodeType {
                 ],
                 default: 'sales',
             },
-            // Operations and Fields
+            // Operações e campos
             ...authOperations,
             ...authFields,
             ...salesOperations,
@@ -181,7 +181,7 @@ export class Hotmart implements INodeType {
         const resource = this.getNodeParameter('resource', 0) as string;
         const operation = this.getNodeParameter('operation', 0) as string;
 
-        // Handle Auth resource separately (doesn't require prior authentication)
+        // Recurso Auth é tratado separadamente (não requer autenticação prévia)
         if (resource === 'auth') {
             if (operation === 'getAccessToken') {
                 for (let i = 0; i < items.length; i++) {
@@ -198,7 +198,7 @@ export class Hotmart implements INodeType {
                             basicToken,
                         });
 
-                        // Calculate expiration time (Hotmart tokens typically expire in 7200 seconds / 2 hours)
+                        // Tokens Hotmart expiram em 7200 segundos (2 horas)
                         const expiresIn = 7200;
                         const expiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
 
@@ -223,12 +223,12 @@ export class Hotmart implements INodeType {
             return [returnData];
         }
 
-        // For other resources, get authentication
+        // Para outros recursos, obter autenticação
         let accessToken: string;
         let baseUrl: string;
 
         if (authMode === 'credentials') {
-            // Traditional n8n credentials mode
+            // Modo credenciais do n8n
             const credentials = await this.getCredentials('hotmartApi');
             accessToken = await getAccessToken({
                 environment: credentials.environment as 'production' | 'sandbox',
@@ -238,7 +238,7 @@ export class Hotmart implements INodeType {
             });
             baseUrl = getBaseUrl(credentials.environment as string);
         } else {
-            // Dynamic/SaaS mode - token passed directly
+            // Modo dinâmico/SaaS - token passado diretamente
             accessToken = this.getNodeParameter('accessToken', 0, '') as string;
             const environment = this.getNodeParameter('environment', 0, 'production') as string;
 
@@ -251,7 +251,7 @@ export class Hotmart implements INodeType {
 
         for (let i = 0; i < items.length; i++) {
             try {
-                // In SaaS mode, allow different tokens per item
+                // No modo SaaS, permite tokens diferentes por item
                 let itemAccessToken = accessToken;
                 let itemBaseUrl = baseUrl;
 
@@ -269,7 +269,7 @@ export class Hotmart implements INodeType {
                 const qs: IDataObject = {};
                 let body: IDataObject = {};
 
-                // Build request based on resource and operation
+                // Construir requisição baseada no recurso e operação
                 if (resource === 'sales') {
                     if (operation === 'getAll') {
                         endpoint = '/payments/api/v1/sales/history';
@@ -281,11 +281,11 @@ export class Hotmart implements INodeType {
                         endpoint = '/payments/api/v1/sales/price/details';
                     }
 
-                    // Apply filters
+                    // Aplicar filtros
                     const filters = this.getNodeParameter('filters', i, {}) as IDataObject;
                     Object.assign(qs, filters);
 
-                    // Apply limit
+                    // Aplicar limite
                     const returnAll = this.getNodeParameter('returnAll', i, false) as boolean;
                     if (!returnAll) {
                         const limit = this.getNodeParameter('limit', i, 50) as number;
@@ -318,7 +318,7 @@ export class Hotmart implements INodeType {
                         body = { due_day: dueDay };
                     }
 
-                    // Apply filters for list operations
+                    // Aplicar filtros para operações de listagem
                     if (['getAll', 'getSummary', 'getPurchases'].includes(operation)) {
                         const filters = this.getNodeParameter('filters', i, {}) as IDataObject;
                         Object.assign(qs, filters);
@@ -361,7 +361,7 @@ export class Hotmart implements INodeType {
                         endpoint = `/club/api/v2/${subdomain}/users/${userId}/progress`;
                     }
 
-                    // Apply filters for list operations
+                    // Aplicar filtros para operações de listagem
                     if (['getStudents', 'getModules', 'getPages'].includes(operation)) {
                         if (operation === 'getStudents') {
                             const filters = this.getNodeParameter('filters', i, {}) as IDataObject;
@@ -385,7 +385,7 @@ export class Hotmart implements INodeType {
 
                         const couponCode = this.getNodeParameter('couponCode', i) as string;
                         const discountPercent = this.getNodeParameter('discount', i) as number;
-                        // Convert percentage (1-99) to decimal (0.01-0.99)
+                        // Converter percentual (1-99) para decimal (0.01-0.99)
                         const discount = discountPercent / 100;
 
                         body = {
@@ -436,7 +436,7 @@ export class Hotmart implements INodeType {
                         const recurrencesStr = this.getNodeParameter('recurrences', i) as string;
                         const paymentType = this.getNodeParameter('paymentType', i) as string;
 
-                        // Parse recurrences string to array of numbers
+                        // Converter string de recorrências para array de números
                         const recurrences = recurrencesStr.split(',').map(r => parseInt(r.trim(), 10)).filter(r => !isNaN(r));
 
                         body = {
@@ -445,13 +445,13 @@ export class Hotmart implements INodeType {
                             payment_type: paymentType,
                         };
 
-                        // Add document for BILLET payment type
+                        // Adicionar documento para pagamento via boleto
                         if (paymentType === 'BILLET') {
                             const document = this.getNodeParameter('document', i) as string;
-                            body.document = document.replace(/[.\-\/]/g, ''); // Remove formatting
+                            body.document = document.replace(/[.\-\/]/g, ''); // Remove formatação
                         }
 
-                        // Add discount if enabled
+                        // Adicionar desconto se habilitado
                         const offerDiscount = this.getNodeParameter('offerDiscount', i, false) as boolean;
                         if (offerDiscount) {
                             const discountType = this.getNodeParameter('discountType', i) as string;
@@ -464,7 +464,7 @@ export class Hotmart implements INodeType {
                     }
                 }
 
-                // Make the API request
+                // Fazer requisição à API
                 const requestOptions = {
                     method,
                     url: `${itemBaseUrl}${endpoint}`,
@@ -479,18 +479,18 @@ export class Hotmart implements INodeType {
 
                 const response = await this.helpers.httpRequest(requestOptions);
 
-                // Handle response
+                // Tratar resposta
                 if (response.items && Array.isArray(response.items)) {
-                    // If response has items array, return each item
+                    // Se resposta tem array de items, retornar cada item
                     for (const item of response.items) {
                         returnData.push({ json: item as IDataObject });
                     }
                 } else {
-                    // Return the whole response
+                    // Retornar resposta completa
                     returnData.push({ json: response as IDataObject });
                 }
             } catch (error) {
-                // Extract error message safely to avoid circular reference issues
+                // Extrair mensagem de erro de forma segura para evitar referências circulares
                 const err = error as { message?: string; response?: { data?: { message?: string } }; statusCode?: number };
                 const errorMessage = err.response?.data?.message || err.message || 'Erro desconhecido na requisição';
 
