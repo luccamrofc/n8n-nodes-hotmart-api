@@ -21,6 +21,7 @@ import {
 import {
     getAccessToken,
     getBaseUrl,
+    invalidateTokenCache,
 } from './GenericFunctions';
 
 export class Hotmart implements INodeType {
@@ -271,181 +272,211 @@ export class Hotmart implements INodeType {
         }
 
         for (let i = 0; i < items.length; i++) {
-            try {
-                // In SaaS mode, allow different tokens/credentials per item
-                let itemAccessToken = accessToken;
-                let itemBaseUrl = baseUrl;
+            let retryCount = 0;
+            const maxRetries = 1; // Permite apenas 1 retry para evitar loop infinito
 
-                if (authMode === 'dynamic') {
-                    const itemEnv = this.getNodeParameter('environment', i, 'production') as 'production' | 'sandbox';
-                    itemBaseUrl = getBaseUrl(itemEnv);
+            while (retryCount <= maxRetries) {
+                try {
+                    // In SaaS mode, allow different tokens/credentials per item
+                    let itemAccessToken = accessToken;
+                    let itemBaseUrl = baseUrl;
 
-                    if (saasAuthType === 'autoRefresh') {
-                        // Auto-refresh mode: get token using dynamic credentials for this item
-                        const itemClientId = this.getNodeParameter('dynamicClientId', i, '') as string;
-                        const itemClientSecret = this.getNodeParameter('dynamicClientSecret', i, '') as string;
-                        const itemBasicToken = this.getNodeParameter('dynamicBasicToken', i, '') as string;
+                    if (authMode === 'dynamic') {
+                        const itemEnv = this.getNodeParameter('environment', i, 'production') as 'production' | 'sandbox';
+                        itemBaseUrl = getBaseUrl(itemEnv);
 
-                        if (itemClientId && itemClientSecret && itemBasicToken) {
-                            itemAccessToken = await getAccessToken({
-                                environment: itemEnv,
-                                clientId: itemClientId,
-                                clientSecret: itemClientSecret,
-                                basicToken: itemBasicToken,
-                            });
+                        if (saasAuthType === 'autoRefresh') {
+                            // Auto-refresh mode: get token using dynamic credentials for this item
+                            const itemClientId = this.getNodeParameter('dynamicClientId', i, '') as string;
+                            const itemClientSecret = this.getNodeParameter('dynamicClientSecret', i, '') as string;
+                            const itemBasicToken = this.getNodeParameter('dynamicBasicToken', i, '') as string;
+
+                            if (itemClientId && itemClientSecret && itemBasicToken) {
+                                // Se é retry, invalida o cache primeiro
+                                if (retryCount > 0) {
+                                    invalidateTokenCache({
+                                        environment: itemEnv,
+                                        clientId: itemClientId,
+                                        clientSecret: itemClientSecret,
+                                        basicToken: itemBasicToken,
+                                    });
+                                }
+
+                                itemAccessToken = await getAccessToken({
+                                    environment: itemEnv,
+                                    clientId: itemClientId,
+                                    clientSecret: itemClientSecret,
+                                    basicToken: itemBasicToken,
+                                });
+                            }
+                        } else {
+                            // Direct token mode: check if this item has its own token
+                            const itemToken = this.getNodeParameter('accessToken', i, '') as string;
+                            if (itemToken) {
+                                itemAccessToken = itemToken;
+                            }
                         }
-                    } else {
-                        // Direct token mode: check if this item has its own token
-                        const itemToken = this.getNodeParameter('accessToken', i, '') as string;
-                        if (itemToken) {
-                            itemAccessToken = itemToken;
+                    }
+
+                    let endpoint = '';
+                    let method: IHttpRequestMethods = 'GET';
+                    const qs: IDataObject = {};
+                    let body: IDataObject = {};
+
+                    // Build request based on resource and operation
+                    if (resource === 'sales') {
+                        if (operation === 'getAll') {
+                            endpoint = '/payments/api/v1/sales/history';
+                        } else if (operation === 'getSummary') {
+                            endpoint = '/payments/api/v1/sales/summary';
+                        } else if (operation === 'getCommissions') {
+                            endpoint = '/payments/api/v1/sales/commissions';
+                        } else if (operation === 'getPriceDetails') {
+                            endpoint = '/payments/api/v1/sales/price/details';
                         }
-                    }
-                }
 
-                let endpoint = '';
-                let method: IHttpRequestMethods = 'GET';
-                const qs: IDataObject = {};
-                let body: IDataObject = {};
-
-                // Build request based on resource and operation
-                if (resource === 'sales') {
-                    if (operation === 'getAll') {
-                        endpoint = '/payments/api/v1/sales/history';
-                    } else if (operation === 'getSummary') {
-                        endpoint = '/payments/api/v1/sales/summary';
-                    } else if (operation === 'getCommissions') {
-                        endpoint = '/payments/api/v1/sales/commissions';
-                    } else if (operation === 'getPriceDetails') {
-                        endpoint = '/payments/api/v1/sales/price/details';
-                    }
-
-                    // Apply filters
-                    const filters = this.getNodeParameter('filters', i, {}) as IDataObject;
-                    Object.assign(qs, filters);
-
-                    // Apply limit
-                    const returnAll = this.getNodeParameter('returnAll', i, false) as boolean;
-                    if (!returnAll) {
-                        const limit = this.getNodeParameter('limit', i, 50) as number;
-                        qs.max_results = limit;
-                    }
-                }
-
-                if (resource === 'subscriptions') {
-                    if (operation === 'getAll') {
-                        endpoint = '/payments/api/v1/subscriptions';
-                    } else if (operation === 'getSummary') {
-                        endpoint = '/payments/api/v1/subscriptions/summary';
-                    } else if (operation === 'getPurchases') {
-                        endpoint = '/payments/api/v1/subscriptions/purchases';
-                    } else if (operation === 'cancel') {
-                        const subscriberCode = this.getNodeParameter('subscriberCode', i) as string;
-                        endpoint = `/payments/api/v1/subscriptions/${subscriberCode}/cancel`;
-                        method = 'POST';
-                        const sendMail = this.getNodeParameter('sendMail', i, true) as boolean;
-                        qs.send_mail = sendMail;
-                    } else if (operation === 'reactivate') {
-                        const subscriberCode = this.getNodeParameter('subscriberCode', i) as string;
-                        endpoint = `/payments/api/v1/subscriptions/${subscriberCode}/reactivate`;
-                        method = 'POST';
-                    } else if (operation === 'changeBillingDate') {
-                        const subscriberCode = this.getNodeParameter('subscriberCode', i) as string;
-                        endpoint = `/payments/api/v1/subscriptions/${subscriberCode}/charge-date`;
-                        method = 'PATCH';
-                        const dueDay = this.getNodeParameter('dueDay', i) as number;
-                        body = { due_day: dueDay };
-                    }
-
-                    // Apply filters for list operations
-                    if (['getAll', 'getSummary', 'getPurchases'].includes(operation)) {
+                        // Apply filters
                         const filters = this.getNodeParameter('filters', i, {}) as IDataObject;
                         Object.assign(qs, filters);
 
-                        const returnAll = this.getNodeParameter('returnAll', i, false) as boolean;
-                        if (!returnAll && operation !== 'getSummary') {
-                            const limit = this.getNodeParameter('limit', i, 50) as number;
-                            qs.max_results = limit;
-                        }
-                    }
-                }
-
-                if (resource === 'products') {
-                    if (operation === 'getAll') {
-                        endpoint = '/products/api/v1/products';
-
-                        const filters = this.getNodeParameter('filters', i, {}) as IDataObject;
-                        Object.assign(qs, filters);
-
+                        // Apply limit
                         const returnAll = this.getNodeParameter('returnAll', i, false) as boolean;
                         if (!returnAll) {
                             const limit = this.getNodeParameter('limit', i, 50) as number;
                             qs.max_results = limit;
                         }
                     }
-                }
 
-                if (resource === 'members') {
-                    const subdomain = this.getNodeParameter('subdomain', i) as string;
+                    if (resource === 'subscriptions') {
+                        if (operation === 'getAll') {
+                            endpoint = '/payments/api/v1/subscriptions';
+                        } else if (operation === 'getSummary') {
+                            endpoint = '/payments/api/v1/subscriptions/summary';
+                        } else if (operation === 'getPurchases') {
+                            endpoint = '/payments/api/v1/subscriptions/purchases';
+                        } else if (operation === 'cancel') {
+                            const subscriberCode = this.getNodeParameter('subscriberCode', i) as string;
+                            endpoint = `/payments/api/v1/subscriptions/${subscriberCode}/cancel`;
+                            method = 'POST';
+                            const sendMail = this.getNodeParameter('sendMail', i, true) as boolean;
+                            qs.send_mail = sendMail;
+                        } else if (operation === 'reactivate') {
+                            const subscriberCode = this.getNodeParameter('subscriberCode', i) as string;
+                            endpoint = `/payments/api/v1/subscriptions/${subscriberCode}/reactivate`;
+                            method = 'POST';
+                        } else if (operation === 'changeBillingDate') {
+                            const subscriberCode = this.getNodeParameter('subscriberCode', i) as string;
+                            endpoint = `/payments/api/v1/subscriptions/${subscriberCode}/charge-date`;
+                            method = 'PATCH';
+                            const dueDay = this.getNodeParameter('dueDay', i) as number;
+                            body = { due_day: dueDay };
+                        }
 
-                    if (operation === 'getStudents') {
-                        endpoint = `/club/api/v2/${subdomain}/users`;
-                    } else if (operation === 'getModules') {
-                        endpoint = `/club/api/v2/${subdomain}/modules`;
-                    } else if (operation === 'getPages') {
-                        const moduleId = this.getNodeParameter('moduleId', i) as string;
-                        endpoint = `/club/api/v2/${subdomain}/modules/${moduleId}/pages`;
-                    } else if (operation === 'getStudentProgress') {
-                        const userId = this.getNodeParameter('userId', i) as string;
-                        endpoint = `/club/api/v2/${subdomain}/users/${userId}/progress`;
-                    }
-
-                    // Apply filters for list operations
-                    if (['getStudents', 'getModules', 'getPages'].includes(operation)) {
-                        if (operation === 'getStudents') {
+                        // Apply filters for list operations
+                        if (['getAll', 'getSummary', 'getPurchases'].includes(operation)) {
                             const filters = this.getNodeParameter('filters', i, {}) as IDataObject;
                             Object.assign(qs, filters);
-                        }
 
-                        const returnAll = this.getNodeParameter('returnAll', i, false) as boolean;
-                        if (!returnAll) {
-                            const limit = this.getNodeParameter('limit', i, 50) as number;
-                            qs.max_results = limit;
+                            const returnAll = this.getNodeParameter('returnAll', i, false) as boolean;
+                            if (!returnAll && operation !== 'getSummary') {
+                                const limit = this.getNodeParameter('limit', i, 50) as number;
+                                qs.max_results = limit;
+                            }
                         }
                     }
-                }
 
-                // Make the API request
-                const requestOptions = {
-                    method,
-                    url: `${itemBaseUrl}${endpoint}`,
-                    headers: {
-                        Authorization: `Bearer ${itemAccessToken}`,
-                        'Content-Type': 'application/json',
-                    },
-                    qs,
-                    body: Object.keys(body).length > 0 ? body : undefined,
-                    json: true,
-                };
+                    if (resource === 'products') {
+                        if (operation === 'getAll') {
+                            endpoint = '/products/api/v1/products';
 
-                const response = await this.helpers.httpRequest(requestOptions);
+                            const filters = this.getNodeParameter('filters', i, {}) as IDataObject;
+                            Object.assign(qs, filters);
 
-                // Handle response
-                if (response.items && Array.isArray(response.items)) {
-                    // If response has items array, return each item
-                    for (const item of response.items) {
-                        returnData.push({ json: item as IDataObject });
+                            const returnAll = this.getNodeParameter('returnAll', i, false) as boolean;
+                            if (!returnAll) {
+                                const limit = this.getNodeParameter('limit', i, 50) as number;
+                                qs.max_results = limit;
+                            }
+                        }
                     }
-                } else {
-                    // Return the whole response
-                    returnData.push({ json: response as IDataObject });
+
+                    if (resource === 'members') {
+                        const subdomain = this.getNodeParameter('subdomain', i) as string;
+
+                        if (operation === 'getStudents') {
+                            endpoint = `/club/api/v2/${subdomain}/users`;
+                        } else if (operation === 'getModules') {
+                            endpoint = `/club/api/v2/${subdomain}/modules`;
+                        } else if (operation === 'getPages') {
+                            const moduleId = this.getNodeParameter('moduleId', i) as string;
+                            endpoint = `/club/api/v2/${subdomain}/modules/${moduleId}/pages`;
+                        } else if (operation === 'getStudentProgress') {
+                            const userId = this.getNodeParameter('userId', i) as string;
+                            endpoint = `/club/api/v2/${subdomain}/users/${userId}/progress`;
+                        }
+
+                        // Apply filters for list operations
+                        if (['getStudents', 'getModules', 'getPages'].includes(operation)) {
+                            if (operation === 'getStudents') {
+                                const filters = this.getNodeParameter('filters', i, {}) as IDataObject;
+                                Object.assign(qs, filters);
+                            }
+
+                            const returnAll = this.getNodeParameter('returnAll', i, false) as boolean;
+                            if (!returnAll) {
+                                const limit = this.getNodeParameter('limit', i, 50) as number;
+                                qs.max_results = limit;
+                            }
+                        }
+                    }
+
+                    // Make the API request
+                    const requestOptions = {
+                        method,
+                        url: `${itemBaseUrl}${endpoint}`,
+                        headers: {
+                            Authorization: `Bearer ${itemAccessToken}`,
+                            'Content-Type': 'application/json',
+                        },
+                        qs,
+                        body: Object.keys(body).length > 0 ? body : undefined,
+                        json: true,
+                    };
+
+                    const response = await this.helpers.httpRequest(requestOptions);
+
+                    // Handle response
+                    if (response.items && Array.isArray(response.items)) {
+                        // If response has items array, return each item
+                        for (const item of response.items) {
+                            returnData.push({ json: item as IDataObject });
+                        }
+                    } else {
+                        // Return the whole response
+                        returnData.push({ json: response as IDataObject });
+                    }
+
+                    // Sucesso - sai do loop de retry
+                    break;
+
+                } catch (error) {
+                    const err = error as { response?: { status?: number }; statusCode?: number; message?: string };
+                    const statusCode = err.response?.status || err.statusCode;
+
+                    // Se erro 401 no modo autoRefresh e ainda não tentamos retry
+                    if (statusCode === 401 && authMode === 'dynamic' && saasAuthType === 'autoRefresh' && retryCount < maxRetries) {
+                        retryCount++;
+                        console.log(`[Hotmart Node] Token expirado (401), tentando novamente com novo token... (tentativa ${retryCount})`);
+                        continue; // Vai para a próxima iteração do while
+                    }
+
+                    // Erro final - não faz mais retry
+                    if (this.continueOnFail()) {
+                        returnData.push({ json: { error: (error as Error).message } });
+                        break; // Sai do loop de retry
+                    }
+                    throw error;
                 }
-            } catch (error) {
-                if (this.continueOnFail()) {
-                    returnData.push({ json: { error: (error as Error).message } });
-                    continue;
-                }
-                throw error;
             }
         }
 

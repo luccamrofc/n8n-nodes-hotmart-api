@@ -198,6 +198,7 @@ class Hotmart {
         };
     }
     async execute() {
+        var _a;
         const items = this.getInputData();
         const returnData = [];
         const authMode = this.getNodeParameter('authMode', 0);
@@ -237,163 +238,183 @@ class Hotmart {
             baseUrl = (0, GenericFunctions_1.getBaseUrl)(environment);
         }
         for (let i = 0; i < items.length; i++) {
-            try {
-                let itemAccessToken = accessToken;
-                let itemBaseUrl = baseUrl;
-                if (authMode === 'dynamic') {
-                    const itemEnv = this.getNodeParameter('environment', i, 'production');
-                    itemBaseUrl = (0, GenericFunctions_1.getBaseUrl)(itemEnv);
-                    if (saasAuthType === 'autoRefresh') {
-                        const itemClientId = this.getNodeParameter('dynamicClientId', i, '');
-                        const itemClientSecret = this.getNodeParameter('dynamicClientSecret', i, '');
-                        const itemBasicToken = this.getNodeParameter('dynamicBasicToken', i, '');
-                        if (itemClientId && itemClientSecret && itemBasicToken) {
-                            itemAccessToken = await (0, GenericFunctions_1.getAccessToken)({
-                                environment: itemEnv,
-                                clientId: itemClientId,
-                                clientSecret: itemClientSecret,
-                                basicToken: itemBasicToken,
-                            });
+            let retryCount = 0;
+            const maxRetries = 1;
+            while (retryCount <= maxRetries) {
+                try {
+                    let itemAccessToken = accessToken;
+                    let itemBaseUrl = baseUrl;
+                    if (authMode === 'dynamic') {
+                        const itemEnv = this.getNodeParameter('environment', i, 'production');
+                        itemBaseUrl = (0, GenericFunctions_1.getBaseUrl)(itemEnv);
+                        if (saasAuthType === 'autoRefresh') {
+                            const itemClientId = this.getNodeParameter('dynamicClientId', i, '');
+                            const itemClientSecret = this.getNodeParameter('dynamicClientSecret', i, '');
+                            const itemBasicToken = this.getNodeParameter('dynamicBasicToken', i, '');
+                            if (itemClientId && itemClientSecret && itemBasicToken) {
+                                if (retryCount > 0) {
+                                    (0, GenericFunctions_1.invalidateTokenCache)({
+                                        environment: itemEnv,
+                                        clientId: itemClientId,
+                                        clientSecret: itemClientSecret,
+                                        basicToken: itemBasicToken,
+                                    });
+                                }
+                                itemAccessToken = await (0, GenericFunctions_1.getAccessToken)({
+                                    environment: itemEnv,
+                                    clientId: itemClientId,
+                                    clientSecret: itemClientSecret,
+                                    basicToken: itemBasicToken,
+                                });
+                            }
+                        }
+                        else {
+                            const itemToken = this.getNodeParameter('accessToken', i, '');
+                            if (itemToken) {
+                                itemAccessToken = itemToken;
+                            }
+                        }
+                    }
+                    let endpoint = '';
+                    let method = 'GET';
+                    const qs = {};
+                    let body = {};
+                    if (resource === 'sales') {
+                        if (operation === 'getAll') {
+                            endpoint = '/payments/api/v1/sales/history';
+                        }
+                        else if (operation === 'getSummary') {
+                            endpoint = '/payments/api/v1/sales/summary';
+                        }
+                        else if (operation === 'getCommissions') {
+                            endpoint = '/payments/api/v1/sales/commissions';
+                        }
+                        else if (operation === 'getPriceDetails') {
+                            endpoint = '/payments/api/v1/sales/price/details';
+                        }
+                        const filters = this.getNodeParameter('filters', i, {});
+                        Object.assign(qs, filters);
+                        const returnAll = this.getNodeParameter('returnAll', i, false);
+                        if (!returnAll) {
+                            const limit = this.getNodeParameter('limit', i, 50);
+                            qs.max_results = limit;
+                        }
+                    }
+                    if (resource === 'subscriptions') {
+                        if (operation === 'getAll') {
+                            endpoint = '/payments/api/v1/subscriptions';
+                        }
+                        else if (operation === 'getSummary') {
+                            endpoint = '/payments/api/v1/subscriptions/summary';
+                        }
+                        else if (operation === 'getPurchases') {
+                            endpoint = '/payments/api/v1/subscriptions/purchases';
+                        }
+                        else if (operation === 'cancel') {
+                            const subscriberCode = this.getNodeParameter('subscriberCode', i);
+                            endpoint = `/payments/api/v1/subscriptions/${subscriberCode}/cancel`;
+                            method = 'POST';
+                            const sendMail = this.getNodeParameter('sendMail', i, true);
+                            qs.send_mail = sendMail;
+                        }
+                        else if (operation === 'reactivate') {
+                            const subscriberCode = this.getNodeParameter('subscriberCode', i);
+                            endpoint = `/payments/api/v1/subscriptions/${subscriberCode}/reactivate`;
+                            method = 'POST';
+                        }
+                        else if (operation === 'changeBillingDate') {
+                            const subscriberCode = this.getNodeParameter('subscriberCode', i);
+                            endpoint = `/payments/api/v1/subscriptions/${subscriberCode}/charge-date`;
+                            method = 'PATCH';
+                            const dueDay = this.getNodeParameter('dueDay', i);
+                            body = { due_day: dueDay };
+                        }
+                        if (['getAll', 'getSummary', 'getPurchases'].includes(operation)) {
+                            const filters = this.getNodeParameter('filters', i, {});
+                            Object.assign(qs, filters);
+                            const returnAll = this.getNodeParameter('returnAll', i, false);
+                            if (!returnAll && operation !== 'getSummary') {
+                                const limit = this.getNodeParameter('limit', i, 50);
+                                qs.max_results = limit;
+                            }
+                        }
+                    }
+                    if (resource === 'products') {
+                        if (operation === 'getAll') {
+                            endpoint = '/products/api/v1/products';
+                            const filters = this.getNodeParameter('filters', i, {});
+                            Object.assign(qs, filters);
+                            const returnAll = this.getNodeParameter('returnAll', i, false);
+                            if (!returnAll) {
+                                const limit = this.getNodeParameter('limit', i, 50);
+                                qs.max_results = limit;
+                            }
+                        }
+                    }
+                    if (resource === 'members') {
+                        const subdomain = this.getNodeParameter('subdomain', i);
+                        if (operation === 'getStudents') {
+                            endpoint = `/club/api/v2/${subdomain}/users`;
+                        }
+                        else if (operation === 'getModules') {
+                            endpoint = `/club/api/v2/${subdomain}/modules`;
+                        }
+                        else if (operation === 'getPages') {
+                            const moduleId = this.getNodeParameter('moduleId', i);
+                            endpoint = `/club/api/v2/${subdomain}/modules/${moduleId}/pages`;
+                        }
+                        else if (operation === 'getStudentProgress') {
+                            const userId = this.getNodeParameter('userId', i);
+                            endpoint = `/club/api/v2/${subdomain}/users/${userId}/progress`;
+                        }
+                        if (['getStudents', 'getModules', 'getPages'].includes(operation)) {
+                            if (operation === 'getStudents') {
+                                const filters = this.getNodeParameter('filters', i, {});
+                                Object.assign(qs, filters);
+                            }
+                            const returnAll = this.getNodeParameter('returnAll', i, false);
+                            if (!returnAll) {
+                                const limit = this.getNodeParameter('limit', i, 50);
+                                qs.max_results = limit;
+                            }
+                        }
+                    }
+                    const requestOptions = {
+                        method,
+                        url: `${itemBaseUrl}${endpoint}`,
+                        headers: {
+                            Authorization: `Bearer ${itemAccessToken}`,
+                            'Content-Type': 'application/json',
+                        },
+                        qs,
+                        body: Object.keys(body).length > 0 ? body : undefined,
+                        json: true,
+                    };
+                    const response = await this.helpers.httpRequest(requestOptions);
+                    if (response.items && Array.isArray(response.items)) {
+                        for (const item of response.items) {
+                            returnData.push({ json: item });
                         }
                     }
                     else {
-                        const itemToken = this.getNodeParameter('accessToken', i, '');
-                        if (itemToken) {
-                            itemAccessToken = itemToken;
-                        }
+                        returnData.push({ json: response });
                     }
+                    break;
                 }
-                let endpoint = '';
-                let method = 'GET';
-                const qs = {};
-                let body = {};
-                if (resource === 'sales') {
-                    if (operation === 'getAll') {
-                        endpoint = '/payments/api/v1/sales/history';
+                catch (error) {
+                    const err = error;
+                    const statusCode = ((_a = err.response) === null || _a === void 0 ? void 0 : _a.status) || err.statusCode;
+                    if (statusCode === 401 && authMode === 'dynamic' && saasAuthType === 'autoRefresh' && retryCount < maxRetries) {
+                        retryCount++;
+                        console.log(`[Hotmart Node] Token expirado (401), tentando novamente com novo token... (tentativa ${retryCount})`);
+                        continue;
                     }
-                    else if (operation === 'getSummary') {
-                        endpoint = '/payments/api/v1/sales/summary';
+                    if (this.continueOnFail()) {
+                        returnData.push({ json: { error: error.message } });
+                        break;
                     }
-                    else if (operation === 'getCommissions') {
-                        endpoint = '/payments/api/v1/sales/commissions';
-                    }
-                    else if (operation === 'getPriceDetails') {
-                        endpoint = '/payments/api/v1/sales/price/details';
-                    }
-                    const filters = this.getNodeParameter('filters', i, {});
-                    Object.assign(qs, filters);
-                    const returnAll = this.getNodeParameter('returnAll', i, false);
-                    if (!returnAll) {
-                        const limit = this.getNodeParameter('limit', i, 50);
-                        qs.max_results = limit;
-                    }
+                    throw error;
                 }
-                if (resource === 'subscriptions') {
-                    if (operation === 'getAll') {
-                        endpoint = '/payments/api/v1/subscriptions';
-                    }
-                    else if (operation === 'getSummary') {
-                        endpoint = '/payments/api/v1/subscriptions/summary';
-                    }
-                    else if (operation === 'getPurchases') {
-                        endpoint = '/payments/api/v1/subscriptions/purchases';
-                    }
-                    else if (operation === 'cancel') {
-                        const subscriberCode = this.getNodeParameter('subscriberCode', i);
-                        endpoint = `/payments/api/v1/subscriptions/${subscriberCode}/cancel`;
-                        method = 'POST';
-                        const sendMail = this.getNodeParameter('sendMail', i, true);
-                        qs.send_mail = sendMail;
-                    }
-                    else if (operation === 'reactivate') {
-                        const subscriberCode = this.getNodeParameter('subscriberCode', i);
-                        endpoint = `/payments/api/v1/subscriptions/${subscriberCode}/reactivate`;
-                        method = 'POST';
-                    }
-                    else if (operation === 'changeBillingDate') {
-                        const subscriberCode = this.getNodeParameter('subscriberCode', i);
-                        endpoint = `/payments/api/v1/subscriptions/${subscriberCode}/charge-date`;
-                        method = 'PATCH';
-                        const dueDay = this.getNodeParameter('dueDay', i);
-                        body = { due_day: dueDay };
-                    }
-                    if (['getAll', 'getSummary', 'getPurchases'].includes(operation)) {
-                        const filters = this.getNodeParameter('filters', i, {});
-                        Object.assign(qs, filters);
-                        const returnAll = this.getNodeParameter('returnAll', i, false);
-                        if (!returnAll && operation !== 'getSummary') {
-                            const limit = this.getNodeParameter('limit', i, 50);
-                            qs.max_results = limit;
-                        }
-                    }
-                }
-                if (resource === 'products') {
-                    if (operation === 'getAll') {
-                        endpoint = '/products/api/v1/products';
-                        const filters = this.getNodeParameter('filters', i, {});
-                        Object.assign(qs, filters);
-                        const returnAll = this.getNodeParameter('returnAll', i, false);
-                        if (!returnAll) {
-                            const limit = this.getNodeParameter('limit', i, 50);
-                            qs.max_results = limit;
-                        }
-                    }
-                }
-                if (resource === 'members') {
-                    const subdomain = this.getNodeParameter('subdomain', i);
-                    if (operation === 'getStudents') {
-                        endpoint = `/club/api/v2/${subdomain}/users`;
-                    }
-                    else if (operation === 'getModules') {
-                        endpoint = `/club/api/v2/${subdomain}/modules`;
-                    }
-                    else if (operation === 'getPages') {
-                        const moduleId = this.getNodeParameter('moduleId', i);
-                        endpoint = `/club/api/v2/${subdomain}/modules/${moduleId}/pages`;
-                    }
-                    else if (operation === 'getStudentProgress') {
-                        const userId = this.getNodeParameter('userId', i);
-                        endpoint = `/club/api/v2/${subdomain}/users/${userId}/progress`;
-                    }
-                    if (['getStudents', 'getModules', 'getPages'].includes(operation)) {
-                        if (operation === 'getStudents') {
-                            const filters = this.getNodeParameter('filters', i, {});
-                            Object.assign(qs, filters);
-                        }
-                        const returnAll = this.getNodeParameter('returnAll', i, false);
-                        if (!returnAll) {
-                            const limit = this.getNodeParameter('limit', i, 50);
-                            qs.max_results = limit;
-                        }
-                    }
-                }
-                const requestOptions = {
-                    method,
-                    url: `${itemBaseUrl}${endpoint}`,
-                    headers: {
-                        Authorization: `Bearer ${itemAccessToken}`,
-                        'Content-Type': 'application/json',
-                    },
-                    qs,
-                    body: Object.keys(body).length > 0 ? body : undefined,
-                    json: true,
-                };
-                const response = await this.helpers.httpRequest(requestOptions);
-                if (response.items && Array.isArray(response.items)) {
-                    for (const item of response.items) {
-                        returnData.push({ json: item });
-                    }
-                }
-                else {
-                    returnData.push({ json: response });
-                }
-            }
-            catch (error) {
-                if (this.continueOnFail()) {
-                    returnData.push({ json: { error: error.message } });
-                    continue;
-                }
-                throw error;
             }
         }
         return [returnData];
