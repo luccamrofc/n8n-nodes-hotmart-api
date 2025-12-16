@@ -40,7 +40,7 @@ const tokenCache: Map<string, ITokenCache> = new Map();
 export function getBaseUrl(environment: string): string {
     return environment === 'sandbox'
         ? 'https://sandbox.hotmart.com'
-        : 'https://api-hot-connect.hotmart.com';
+        : 'https://developers.hotmart.com';
 }
 
 /**

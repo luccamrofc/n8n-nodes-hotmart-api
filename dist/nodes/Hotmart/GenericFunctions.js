@@ -12,7 +12,7 @@ const tokenCache = new Map();
 function getBaseUrl(environment) {
     return environment === 'sandbox'
         ? 'https://sandbox.hotmart.com'
-        : 'https://api-hot-connect.hotmart.com';
+        : 'https://developers.hotmart.com';
 }
 function getCacheKey(credentials) {
     return `${credentials.clientId}:${credentials.environment}`;
