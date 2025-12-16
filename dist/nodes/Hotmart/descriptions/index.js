@@ -19,3 +19,4 @@ __exportStar(require("./SubscriptionsDescription"), exports);
 __exportStar(require("./ProductsDescription"), exports);
 __exportStar(require("./MembersDescription"), exports);
 __exportStar(require("./AuthDescription"), exports);
+__exportStar(require("./CouponsDescription"), exports);

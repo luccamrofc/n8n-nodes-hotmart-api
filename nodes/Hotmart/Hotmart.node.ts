@@ -20,6 +20,8 @@ import {
     membersFields,
     authOperations,
     authFields,
+    couponsOperations,
+    couponsFields,
 } from './descriptions';
 
 import {
@@ -84,7 +86,7 @@ export class Hotmart implements INodeType {
                 displayOptions: {
                     show: {
                         authMode: ['dynamic'],
-                        resource: ['sales', 'subscriptions', 'products', 'members'],
+                        resource: ['sales', 'subscriptions', 'products', 'members', 'coupons'],
                     },
                 },
                 default: '',
@@ -97,7 +99,7 @@ export class Hotmart implements INodeType {
                 displayOptions: {
                     show: {
                         authMode: ['dynamic'],
-                        resource: ['sales', 'subscriptions', 'products', 'members'],
+                        resource: ['sales', 'subscriptions', 'products', 'members', 'coupons'],
                     },
                 },
                 options: [
@@ -133,6 +135,10 @@ export class Hotmart implements INodeType {
                         value: 'subscriptions',
                     },
                     {
+                        name: 'Cupom',
+                        value: 'coupons',
+                    },
+                    {
                         name: 'Produto',
                         value: 'products',
                     },
@@ -154,6 +160,8 @@ export class Hotmart implements INodeType {
             ...productsFields,
             ...membersOperations,
             ...membersFields,
+            ...couponsOperations,
+            ...couponsFields,
         ],
     };
 
@@ -357,6 +365,57 @@ export class Hotmart implements INodeType {
                             const limit = this.getNodeParameter('limit', i, 50) as number;
                             qs.max_results = limit;
                         }
+                    }
+                }
+
+                if (resource === 'coupons') {
+                    const productId = this.getNodeParameter('productId', i, '') as string;
+
+                    if (operation === 'create') {
+                        endpoint = `/products/api/v1/product/${productId}/coupon`;
+                        method = 'POST';
+
+                        const couponCode = this.getNodeParameter('couponCode', i) as string;
+                        const discountPercent = this.getNodeParameter('discount', i) as number;
+                        // Convert percentage (1-99) to decimal (0.01-0.99)
+                        const discount = discountPercent / 100;
+
+                        body = {
+                            code: couponCode,
+                            discount,
+                        };
+
+                        const additionalOptions = this.getNodeParameter('additionalOptions', i, {}) as IDataObject;
+
+                        if (additionalOptions.startDate) {
+                            body.start_date = new Date(additionalOptions.startDate as string).getTime();
+                        }
+                        if (additionalOptions.endDate) {
+                            body.end_date = new Date(additionalOptions.endDate as string).getTime();
+                        }
+                        if (additionalOptions.affiliateId) {
+                            body.affiliate = additionalOptions.affiliateId;
+                        }
+                        if (additionalOptions.offerIds) {
+                            body.offer_ids = (additionalOptions.offerIds as string).split(',').map(id => id.trim());
+                        }
+                    } else if (operation === 'getAll') {
+                        endpoint = `/products/api/v1/coupon/product/${productId}`;
+
+                        const filters = this.getNodeParameter('filters', i, {}) as IDataObject;
+                        if (filters.code) {
+                            qs.code = filters.code;
+                        }
+
+                        const returnAll = this.getNodeParameter('returnAll', i, false) as boolean;
+                        if (!returnAll) {
+                            const limit = this.getNodeParameter('limit', i, 50) as number;
+                            qs.max_results = limit;
+                        }
+                    } else if (operation === 'delete') {
+                        const couponId = this.getNodeParameter('couponId', i) as string;
+                        endpoint = `/products/api/v1/coupon/${couponId}`;
+                        method = 'DELETE';
                     }
                 }
 

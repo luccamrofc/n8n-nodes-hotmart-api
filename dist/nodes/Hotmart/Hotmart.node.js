@@ -60,7 +60,7 @@ class Hotmart {
                     displayOptions: {
                         show: {
                             authMode: ['dynamic'],
-                            resource: ['sales', 'subscriptions', 'products', 'members'],
+                            resource: ['sales', 'subscriptions', 'products', 'members', 'coupons'],
                         },
                     },
                     default: '',
@@ -73,7 +73,7 @@ class Hotmart {
                     displayOptions: {
                         show: {
                             authMode: ['dynamic'],
-                            resource: ['sales', 'subscriptions', 'products', 'members'],
+                            resource: ['sales', 'subscriptions', 'products', 'members', 'coupons'],
                         },
                     },
                     options: [
@@ -108,6 +108,10 @@ class Hotmart {
                             value: 'subscriptions',
                         },
                         {
+                            name: 'Cupom',
+                            value: 'coupons',
+                        },
+                        {
                             name: 'Produto',
                             value: 'products',
                         },
@@ -128,6 +132,8 @@ class Hotmart {
                 ...descriptions_1.productsFields,
                 ...descriptions_1.membersOperations,
                 ...descriptions_1.membersFields,
+                ...descriptions_1.couponsOperations,
+                ...descriptions_1.couponsFields,
             ],
         };
     }
@@ -309,6 +315,50 @@ class Hotmart {
                             const limit = this.getNodeParameter('limit', i, 50);
                             qs.max_results = limit;
                         }
+                    }
+                }
+                if (resource === 'coupons') {
+                    const productId = this.getNodeParameter('productId', i, '');
+                    if (operation === 'create') {
+                        endpoint = `/products/api/v1/product/${productId}/coupon`;
+                        method = 'POST';
+                        const couponCode = this.getNodeParameter('couponCode', i);
+                        const discountPercent = this.getNodeParameter('discount', i);
+                        const discount = discountPercent / 100;
+                        body = {
+                            code: couponCode,
+                            discount,
+                        };
+                        const additionalOptions = this.getNodeParameter('additionalOptions', i, {});
+                        if (additionalOptions.startDate) {
+                            body.start_date = new Date(additionalOptions.startDate).getTime();
+                        }
+                        if (additionalOptions.endDate) {
+                            body.end_date = new Date(additionalOptions.endDate).getTime();
+                        }
+                        if (additionalOptions.affiliateId) {
+                            body.affiliate = additionalOptions.affiliateId;
+                        }
+                        if (additionalOptions.offerIds) {
+                            body.offer_ids = additionalOptions.offerIds.split(',').map(id => id.trim());
+                        }
+                    }
+                    else if (operation === 'getAll') {
+                        endpoint = `/products/api/v1/coupon/product/${productId}`;
+                        const filters = this.getNodeParameter('filters', i, {});
+                        if (filters.code) {
+                            qs.code = filters.code;
+                        }
+                        const returnAll = this.getNodeParameter('returnAll', i, false);
+                        if (!returnAll) {
+                            const limit = this.getNodeParameter('limit', i, 50);
+                            qs.max_results = limit;
+                        }
+                    }
+                    else if (operation === 'delete') {
+                        const couponId = this.getNodeParameter('couponId', i);
+                        endpoint = `/products/api/v1/coupon/${couponId}`;
+                        method = 'DELETE';
                     }
                 }
                 const requestOptions = {
