@@ -1,6 +1,112 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.HotmartTrigger = void 0;
+const FLOW_EVENT_MAP = {
+    'PURCHASE_APPROVED': 0,
+    'PURCHASE_COMPLETE': 1,
+    'PURCHASE_CANCELED': 2,
+    'PURCHASE_REFUNDED': 3,
+    'PURCHASE_CHARGEBACK': 4,
+    'PURCHASE_BILLET_PRINTED': 5,
+    'PURCHASE_DELAYED': 6,
+    'PURCHASE_EXPIRED': 7,
+    'PURCHASE_OUT_OF_SHOPPING_CART': 8,
+    'PURCHASE_PROTEST': 9,
+    'SUBSCRIPTION_CANCELLATION': 10,
+    'SWITCH_PLAN': 11,
+};
+const FLOW_OUTPUT_NAMES = [
+    'Compra Aprovada',
+    'Compra Completa',
+    'Compra Cancelada',
+    'Compra Reembolsada',
+    'Chargeback',
+    'Boleto Impresso',
+    'Compra Atrasada',
+    'Compra Expirada',
+    'Abandono Carrinho',
+    'Disputa Aberta',
+    'Cancel. Assinatura',
+    'Troca de Plano',
+    'Outros',
+];
+const SUPER_FLOW_OUTPUT_NAMES = [
+    'Compra Única',
+    'Nova Assinatura',
+    'Renovação',
+    'Cancelamento',
+    'Problema Pagamento',
+    'Outros',
+];
+function getFlowOutputIndex(eventType) {
+    var _a;
+    return (_a = FLOW_EVENT_MAP[eventType]) !== null && _a !== void 0 ? _a : 12;
+}
+function getSuperFlowOutputIndex(eventType, bodyData) {
+    const data = bodyData.data || {};
+    const purchase = data.purchase || {};
+    const subscription = data.subscription;
+    const recurrencyNumber = purchase.recurrency_number || 0;
+    if (eventType === 'PURCHASE_APPROVED' || eventType === 'PURCHASE_COMPLETE') {
+        if (!subscription) {
+            return 0;
+        }
+        if (recurrencyNumber === 1) {
+            return 1;
+        }
+        return 2;
+    }
+    if (['PURCHASE_CANCELED', 'SUBSCRIPTION_CANCELLATION', 'PURCHASE_REFUNDED'].includes(eventType)) {
+        return 3;
+    }
+    if (['PURCHASE_CHARGEBACK', 'PURCHASE_PROTEST', 'PURCHASE_DELAYED', 'PURCHASE_EXPIRED'].includes(eventType)) {
+        return 4;
+    }
+    return 5;
+}
+function parseWebhookData(bodyData) {
+    const eventType = bodyData.event;
+    const webhookData = {
+        event: eventType,
+        data: bodyData.data || bodyData,
+        creation_date: bodyData.creation_date,
+        id: bodyData.id,
+    };
+    if (bodyData.data && typeof bodyData.data === 'object') {
+        const data = bodyData.data;
+        if (data.buyer) {
+            webhookData.buyer = data.buyer;
+        }
+        if (data.product) {
+            webhookData.product = data.product;
+        }
+        if (data.purchase) {
+            webhookData.purchase = data.purchase;
+        }
+        if (data.subscription) {
+            webhookData.subscription = data.subscription;
+        }
+        if (data.producer) {
+            webhookData.producer = data.producer;
+        }
+        if (data.affiliate) {
+            webhookData.affiliate = data.affiliate;
+        }
+    }
+    return webhookData;
+}
+function createMultiOutputResponse(totalOutputs, activeIndex, webhookData, context) {
+    const workflowData = [];
+    for (let i = 0; i < totalOutputs; i++) {
+        if (i === activeIndex) {
+            workflowData.push(context.helpers.returnJsonArray([webhookData]));
+        }
+        else {
+            workflowData.push([]);
+        }
+    }
+    return { workflowData };
+}
 class HotmartTrigger {
     constructor() {
         this.description = {
@@ -9,13 +115,19 @@ class HotmartTrigger {
             icon: 'file:hotmart.png',
             group: ['trigger'],
             version: 1,
-            subtitle: '={{$parameter["event"]}}',
+            subtitle: '={{$parameter["webhookMode"] === "flow" ? "Flow: " + "13 saídas" : $parameter["webhookMode"] === "superFlow" ? "Super Flow: 6 saídas" : $parameter["event"]}}',
             description: 'Inicia o workflow quando um evento webhook da Hotmart ocorre',
             defaults: {
                 name: 'Hotmart Trigger',
             },
             inputs: [],
-            outputs: ['main'],
+            outputs: `={{
+            $parameter["webhookMode"] === "flow" 
+                ? ${JSON.stringify(FLOW_OUTPUT_NAMES)}
+                : $parameter["webhookMode"] === "superFlow"
+                    ? ${JSON.stringify(SUPER_FLOW_OUTPUT_NAMES)}
+                    : ["main"]
+        }}`,
             webhooks: [
                 {
                     name: 'default',
@@ -26,10 +138,40 @@ class HotmartTrigger {
             ],
             properties: [
                 {
+                    displayName: 'Modo do Webhook',
+                    name: 'webhookMode',
+                    type: 'options',
+                    noDataExpression: true,
+                    options: [
+                        {
+                            name: 'Padrão',
+                            value: 'standard',
+                            description: 'Uma única saída para todos os eventos',
+                        },
+                        {
+                            name: 'Flow',
+                            value: 'flow',
+                            description: 'Saídas separadas por tipo de evento (13 saídas)',
+                        },
+                        {
+                            name: 'Super Flow',
+                            value: 'superFlow',
+                            description: 'Saídas granulares por contexto (6 saídas: Compra Única, Nova Assinatura, Renovação, etc.)',
+                        },
+                    ],
+                    default: 'standard',
+                    description: 'Define como os eventos são roteados para as saídas do workflow',
+                },
+                {
                     displayName: 'Evento',
                     name: 'event',
                     type: 'options',
                     noDataExpression: true,
+                    displayOptions: {
+                        show: {
+                            webhookMode: ['standard'],
+                        },
+                    },
                     options: [
                         {
                             name: 'Todos os Eventos',
@@ -115,7 +257,7 @@ class HotmartTrigger {
     }
     async webhook() {
         const bodyData = this.getBodyData();
-        const event = this.getNodeParameter('event');
+        const webhookMode = this.getNodeParameter('webhookMode', 'standard');
         const hottok = this.getNodeParameter('hottok');
         if (hottok) {
             const requestHottok = bodyData.hottok;
@@ -129,40 +271,30 @@ class HotmartTrigger {
             }
         }
         const eventType = bodyData.event;
-        if (event !== 'all' && eventType !== event) {
+        const webhookData = parseWebhookData(bodyData);
+        if (webhookMode === 'standard') {
+            const event = this.getNodeParameter('event');
+            if (event !== 'all' && eventType !== event) {
+                return {
+                    webhookResponse: {
+                        status: 200,
+                        body: 'Evento ignorado',
+                    },
+                };
+            }
             return {
-                webhookResponse: {
-                    status: 200,
-                    body: 'Evento ignorado',
-                },
+                workflowData: [
+                    this.helpers.returnJsonArray([webhookData]),
+                ],
             };
         }
-        const webhookData = {
-            event: eventType,
-            data: bodyData.data || bodyData,
-            creation_date: bodyData.creation_date,
-            id: bodyData.id,
-        };
-        if (bodyData.data && typeof bodyData.data === 'object') {
-            const data = bodyData.data;
-            if (data.buyer) {
-                webhookData.buyer = data.buyer;
-            }
-            if (data.product) {
-                webhookData.product = data.product;
-            }
-            if (data.purchase) {
-                webhookData.purchase = data.purchase;
-            }
-            if (data.subscription) {
-                webhookData.subscription = data.subscription;
-            }
-            if (data.producer) {
-                webhookData.producer = data.producer;
-            }
-            if (data.affiliate) {
-                webhookData.affiliate = data.affiliate;
-            }
+        if (webhookMode === 'flow') {
+            const outputIndex = getFlowOutputIndex(eventType);
+            return createMultiOutputResponse(FLOW_OUTPUT_NAMES.length, outputIndex, webhookData, this);
+        }
+        if (webhookMode === 'superFlow') {
+            const outputIndex = getSuperFlowOutputIndex(eventType, bodyData);
+            return createMultiOutputResponse(SUPER_FLOW_OUTPUT_NAMES.length, outputIndex, webhookData, this);
         }
         return {
             workflowData: [

@@ -11,7 +11,8 @@ A Hotmart é uma plataforma de produtos digitais que permite criadores venderem 
 - **Modo Dual de Autenticação**: Suporta tanto credenciais estáticas (uso pessoal) quanto tokens dinâmicos (aplicações SaaS/multi-tenant)
 - **Operação de Autenticação**: Obtenha access tokens diretamente no workflow
 - **Cobertura Completa da API**: Vendas, Assinaturas, Produtos, Área de Membros, Cupons e Negociação de Parcelas
-- **Webhook Trigger**: Receba notificações em tempo real para compras, cancelamentos e mais
+- **Webhook Trigger com 3 Modos**: Padrão, Flow (13 saídas) e Super Flow (6 saídas) para roteamento automático de eventos
+- **Suporte a Sandbox**: Teste seus workflows no ambiente sandbox da Hotmart
 
 ## Instalação
 
@@ -109,9 +110,66 @@ Passa autenticação dinamicamente por execução. Ideal para:
 
 ## Node Trigger
 
-O node **Hotmart Trigger** permite receber webhooks da Hotmart para os seguintes eventos:
+O node **Hotmart Trigger** permite receber webhooks da Hotmart com **3 modos de operação**:
 
 > ⚠️ **Segurança**: Configure sempre o campo **Hottok** no trigger para validar que as requisições vêm realmente da Hotmart. Sem o Hottok configurado, qualquer pessoa que descobrir a URL do webhook pode enviar dados falsos ao seu workflow.
+
+### 📡 Modos de Webhook
+
+#### Modo Padrão
+Uma única saída para todos os eventos. Você pode filtrar por evento específico ou receber todos.
+
+#### Modo Flow (13 saídas)
+Cada tipo de evento é roteado automaticamente para uma saída específica. Elimina a necessidade de nodes IF/Switch no seu workflow.
+
+```
+┌─────────────────────────┐
+│    Hotmart Trigger      │
+│    (Modo: Flow)         │
+├─────────────────────────┤
+│ ● Compra Aprovada      →│─── [Enviar Email Boas-Vindas]
+│ ● Compra Completa      →│─── [Liberar Acesso]
+│ ● Compra Cancelada     →│─── [Revogar Acesso]
+│ ● Compra Reembolsada   →│─── [Processar Reembolso]
+│ ● Chargeback           →│─── [Alerta Urgente]
+│ ● Boleto Impresso      →│─── [Email Lembrete]
+│ ● Compra Atrasada      →│─── [Cobrança]
+│ ● Compra Expirada      →│─── [Noop]
+│ ● Abandono Carrinho    →│─── [Remarketing]
+│ ● Disputa Aberta       →│─── [Suporte]
+│ ● Cancel. Assinatura   →│─── [Winback]
+│ ● Troca de Plano       →│─── [Atualizar Permissões]
+│ ● Outros               →│─── [Log]
+└─────────────────────────┘
+```
+
+#### Modo Super Flow (6 saídas)
+Saídas granulares baseadas no contexto da compra. Ideal para diferenciar compras únicas de assinaturas.
+
+| Saída | Descrição | Eventos |
+|-------|-----------|---------|
+| **Compra Única** | Produto vendido sem recorrência | `PURCHASE_APPROVED` sem subscription |
+| **Nova Assinatura** | Primeira cobrança de assinatura | `PURCHASE_APPROVED` com `recurrency_number = 1` |
+| **Renovação** | Cobranças recorrentes | `PURCHASE_APPROVED` com `recurrency_number > 1` |
+| **Cancelamento** | Cancelamentos e reembolsos | `PURCHASE_CANCELED`, `REFUNDED`, `SUBSCRIPTION_CANCELLATION` |
+| **Problema Pagamento** | Issues de cobrança | `CHARGEBACK`, `PROTEST`, `DELAYED`, `EXPIRED` |
+| **Outros** | Demais eventos | Qualquer outro evento |
+
+```
+┌─────────────────────────┐
+│    Hotmart Trigger      │
+│    (Modo: Super Flow)   │
+├─────────────────────────┤
+│ ● Compra Única         →│─── [Entregar Produto]
+│ ● Nova Assinatura      →│─── [Onboarding Completo]
+│ ● Renovação            →│─── [Email Agradecimento]
+│ ● Cancelamento         →│─── [Campanha Winback]
+│ ● Problema Pagamento   →│─── [Recuperação de Venda]
+│ ● Outros               →│─── [Log para Debug]
+└─────────────────────────┘
+```
+
+### Eventos Suportados
 
 - Compra Aprovada
 - Compra Completa
@@ -121,7 +179,10 @@ O node **Hotmart Trigger** permite receber webhooks da Hotmart para os seguintes
 - Disputa Aberta
 - Cancelamento de Assinatura
 - Troca de Plano
-- E mais...
+- Boleto Impresso
+- Compra Atrasada
+- Compra Expirada
+- Abandono de Carrinho
 
 ## Configuração de Credenciais
 
