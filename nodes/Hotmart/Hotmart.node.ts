@@ -221,8 +221,20 @@ export class Hotmart implements INodeType {
             baseUrl = getBaseUrl(credentials.environment as string);
         } else {
             // Dynamic/SaaS mode - token passed directly
-            accessToken = this.getNodeParameter('accessToken', 0) as string;
-            const environment = this.getNodeParameter('environment', 0) as string;
+            let tokenInput = this.getNodeParameter('accessToken', 0, '') as string;
+            const environment = this.getNodeParameter('environment', 0, 'production') as string;
+
+            if (!tokenInput) {
+                throw new Error('Token de Acesso é obrigatório no modo SaaS. Use a operação "Autenticação > Obter Access Token" primeiro.');
+            }
+
+            // Decode token if it was URL encoded
+            try {
+                accessToken = decodeURIComponent(tokenInput);
+            } catch {
+                accessToken = tokenInput;
+            }
+
             baseUrl = getBaseUrl(environment);
         }
 
@@ -235,7 +247,12 @@ export class Hotmart implements INodeType {
                 if (authMode === 'dynamic') {
                     const itemToken = this.getNodeParameter('accessToken', i, '') as string;
                     if (itemToken) {
-                        itemAccessToken = itemToken;
+                        // Decode token if it was URL encoded
+                        try {
+                            itemAccessToken = decodeURIComponent(itemToken);
+                        } catch {
+                            itemAccessToken = itemToken;
+                        }
                     }
                     const itemEnv = this.getNodeParameter('environment', i, 'production') as string;
                     itemBaseUrl = getBaseUrl(itemEnv);
