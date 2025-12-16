@@ -69,7 +69,32 @@ export class Hotmart implements INodeType {
                 default: 'credentials',
                 description: 'Escolha como autenticar com a API da Hotmart',
             },
-            // Dynamic Token Fields (shown only in SaaS mode)
+            // SaaS Auth Type Selector (shown only in SaaS mode)
+            {
+                displayName: 'Tipo de Autenticação SaaS',
+                name: 'saasAuthType',
+                type: 'options',
+                displayOptions: {
+                    show: {
+                        authMode: ['dynamic'],
+                    },
+                },
+                options: [
+                    {
+                        name: 'Token Direto (Já Autenticado)',
+                        value: 'directToken',
+                        description: 'Passar um access token já obtido - você gerencia o refresh externamente',
+                    },
+                    {
+                        name: 'Credenciais Dinâmicas (Auto-Refresh)',
+                        value: 'autoRefresh',
+                        description: 'Passar credenciais OAuth e o node gerencia o token automaticamente',
+                    },
+                ],
+                default: 'directToken',
+                description: 'Escolha como fornecer a autenticação no modo SaaS',
+            },
+            // Direct Token Field (shown only when using direct token)
             {
                 displayName: 'Token de Acesso',
                 name: 'accessToken',
@@ -81,11 +106,62 @@ export class Hotmart implements INodeType {
                 displayOptions: {
                     show: {
                         authMode: ['dynamic'],
+                        saasAuthType: ['directToken'],
                     },
                 },
                 default: '',
                 description: 'O token de acesso OAuth da Hotmart. Pode ser passado dinamicamente de um node anterior (ex: do seu banco de dados ou fluxo OAuth).',
             },
+            // Dynamic Credentials Fields (shown only when using auto-refresh)
+            {
+                displayName: 'Client ID',
+                name: 'dynamicClientId',
+                type: 'string',
+                required: true,
+                displayOptions: {
+                    show: {
+                        authMode: ['dynamic'],
+                        saasAuthType: ['autoRefresh'],
+                    },
+                },
+                default: '',
+                description: 'O Client ID das Credenciais de Desenvolvedor da Hotmart',
+            },
+            {
+                displayName: 'Client Secret',
+                name: 'dynamicClientSecret',
+                type: 'string',
+                typeOptions: {
+                    password: true,
+                },
+                required: true,
+                displayOptions: {
+                    show: {
+                        authMode: ['dynamic'],
+                        saasAuthType: ['autoRefresh'],
+                    },
+                },
+                default: '',
+                description: 'O Client Secret das Credenciais de Desenvolvedor da Hotmart',
+            },
+            {
+                displayName: 'Token Basic',
+                name: 'dynamicBasicToken',
+                type: 'string',
+                typeOptions: {
+                    password: true,
+                },
+                required: true,
+                displayOptions: {
+                    show: {
+                        authMode: ['dynamic'],
+                        saasAuthType: ['autoRefresh'],
+                    },
+                },
+                default: '',
+                description: 'O Token Basic das Credenciais de Desenvolvedor da Hotmart (usado para autenticação OAuth)',
+            },
+            // Environment field (shown for all SaaS modes)
             {
                 displayName: 'Ambiente',
                 name: 'environment',
@@ -159,6 +235,10 @@ export class Hotmart implements INodeType {
         let baseUrl: string;
 
         // Get authentication based on mode
+        const saasAuthType = authMode === 'dynamic'
+            ? this.getNodeParameter('saasAuthType', 0, 'directToken') as string
+            : '';
+
         if (authMode === 'credentials') {
             // Traditional n8n credentials mode
             const credentials = await this.getCredentials('hotmartApi');
@@ -169,8 +249,22 @@ export class Hotmart implements INodeType {
                 basicToken: credentials.basicToken as string,
             });
             baseUrl = getBaseUrl(credentials.environment as string);
+        } else if (saasAuthType === 'autoRefresh') {
+            // Dynamic/SaaS mode with auto-refresh - use dynamic credentials
+            const dynamicClientId = this.getNodeParameter('dynamicClientId', 0) as string;
+            const dynamicClientSecret = this.getNodeParameter('dynamicClientSecret', 0) as string;
+            const dynamicBasicToken = this.getNodeParameter('dynamicBasicToken', 0) as string;
+            const environment = this.getNodeParameter('environment', 0) as 'production' | 'sandbox';
+
+            accessToken = await getAccessToken({
+                environment,
+                clientId: dynamicClientId,
+                clientSecret: dynamicClientSecret,
+                basicToken: dynamicBasicToken,
+            });
+            baseUrl = getBaseUrl(environment);
         } else {
-            // Dynamic/SaaS mode - token passed directly
+            // Dynamic/SaaS mode with direct token
             accessToken = this.getNodeParameter('accessToken', 0) as string;
             const environment = this.getNodeParameter('environment', 0) as string;
             baseUrl = getBaseUrl(environment);
@@ -178,18 +272,35 @@ export class Hotmart implements INodeType {
 
         for (let i = 0; i < items.length; i++) {
             try {
-                // In SaaS mode, allow different tokens per item
+                // In SaaS mode, allow different tokens/credentials per item
                 let itemAccessToken = accessToken;
                 let itemBaseUrl = baseUrl;
 
                 if (authMode === 'dynamic') {
-                    // Check if this item has its own token (for batch processing)
-                    const itemToken = this.getNodeParameter('accessToken', i, '') as string;
-                    if (itemToken) {
-                        itemAccessToken = itemToken;
-                    }
-                    const itemEnv = this.getNodeParameter('environment', i, 'production') as string;
+                    const itemEnv = this.getNodeParameter('environment', i, 'production') as 'production' | 'sandbox';
                     itemBaseUrl = getBaseUrl(itemEnv);
+
+                    if (saasAuthType === 'autoRefresh') {
+                        // Auto-refresh mode: get token using dynamic credentials for this item
+                        const itemClientId = this.getNodeParameter('dynamicClientId', i, '') as string;
+                        const itemClientSecret = this.getNodeParameter('dynamicClientSecret', i, '') as string;
+                        const itemBasicToken = this.getNodeParameter('dynamicBasicToken', i, '') as string;
+
+                        if (itemClientId && itemClientSecret && itemBasicToken) {
+                            itemAccessToken = await getAccessToken({
+                                environment: itemEnv,
+                                clientId: itemClientId,
+                                clientSecret: itemClientSecret,
+                                basicToken: itemBasicToken,
+                            });
+                        }
+                    } else {
+                        // Direct token mode: check if this item has its own token
+                        const itemToken = this.getNodeParameter('accessToken', i, '') as string;
+                        if (itemToken) {
+                            itemAccessToken = itemToken;
+                        }
+                    }
                 }
 
                 let endpoint = '';

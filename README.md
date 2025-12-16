@@ -40,16 +40,34 @@ Usa o sistema de credenciais nativo do n8n. Ideal para:
 
 ### 🚀 Modo Token Dinâmico (Modo SaaS)
 
-Passa tokens de acesso dinamicamente por execução. Ideal para:
+Passa autenticação dinamicamente por execução. Ideal para:
 - Aplicações SaaS multi-tenant
 - Soluções white-label
 - Plataformas que gerenciam múltiplas contas Hotmart
 - Integrações dinâmicas onde cada usuário tem suas próprias credenciais
 
-**Como usar o Modo SaaS:**
+O Modo SaaS oferece **duas opções** de autenticação:
+
+#### Token Direto (Já Autenticado)
+Use quando você já possui um access token OAuth válido:
 1. Selecione "Token Dinâmico (Modo SaaS)" no Modo de Autenticação
-2. Passe o `accessToken` de um node anterior (ex: do seu banco de dados, fluxo OAuth ou requisição HTTP)
-3. Cada execução do workflow pode usar uma conta Hotmart diferente!
+2. Selecione "Token Direto (Já Autenticado)" no Tipo de Autenticação SaaS
+3. Passe o `accessToken` de um node anterior (ex: do seu banco de dados ou requisição HTTP)
+
+> ⚠️ **Nota**: Neste modo, você é responsável por gerenciar a expiração e renovação do token.
+
+#### Credenciais Dinâmicas (Auto-Refresh) ✨ **NOVO**
+Use quando você quer que o node gerencie automaticamente o access token:
+1. Selecione "Token Dinâmico (Modo SaaS)" no Modo de Autenticação
+2. Selecione "Credenciais Dinâmicas (Auto-Refresh)" no Tipo de Autenticação SaaS
+3. Passe `Client ID`, `Client Secret` e `Token Basic` (podem vir de um node anterior, como do banco de dados)
+4. O node obtém e cacheia o access token automaticamente!
+
+**Vantagens do Auto-Refresh:**
+- 🔄 **Token gerenciado automaticamente**: O node obtém e renova tokens conforme necessário
+- ⚡ **Cache inteligente**: Tokens são cacheados e renovados 5 minutos antes de expirar
+- 🔁 **Retry automático**: Se um token expirar durante a execução, o node tenta novamente
+- 📦 **Batch processing**: Cada item no fluxo pode usar credenciais diferentes
 
 ## Operações
 

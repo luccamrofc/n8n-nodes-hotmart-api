@@ -50,6 +50,30 @@ class Hotmart {
                     description: 'Escolha como autenticar com a API da Hotmart',
                 },
                 {
+                    displayName: 'Tipo de Autenticação SaaS',
+                    name: 'saasAuthType',
+                    type: 'options',
+                    displayOptions: {
+                        show: {
+                            authMode: ['dynamic'],
+                        },
+                    },
+                    options: [
+                        {
+                            name: 'Token Direto (Já Autenticado)',
+                            value: 'directToken',
+                            description: 'Passar um access token já obtido - você gerencia o refresh externamente',
+                        },
+                        {
+                            name: 'Credenciais Dinâmicas (Auto-Refresh)',
+                            value: 'autoRefresh',
+                            description: 'Passar credenciais OAuth e o node gerencia o token automaticamente',
+                        },
+                    ],
+                    default: 'directToken',
+                    description: 'Escolha como fornecer a autenticação no modo SaaS',
+                },
+                {
                     displayName: 'Token de Acesso',
                     name: 'accessToken',
                     type: 'string',
@@ -60,10 +84,59 @@ class Hotmart {
                     displayOptions: {
                         show: {
                             authMode: ['dynamic'],
+                            saasAuthType: ['directToken'],
                         },
                     },
                     default: '',
                     description: 'O token de acesso OAuth da Hotmart. Pode ser passado dinamicamente de um node anterior (ex: do seu banco de dados ou fluxo OAuth).',
+                },
+                {
+                    displayName: 'Client ID',
+                    name: 'dynamicClientId',
+                    type: 'string',
+                    required: true,
+                    displayOptions: {
+                        show: {
+                            authMode: ['dynamic'],
+                            saasAuthType: ['autoRefresh'],
+                        },
+                    },
+                    default: '',
+                    description: 'O Client ID das Credenciais de Desenvolvedor da Hotmart',
+                },
+                {
+                    displayName: 'Client Secret',
+                    name: 'dynamicClientSecret',
+                    type: 'string',
+                    typeOptions: {
+                        password: true,
+                    },
+                    required: true,
+                    displayOptions: {
+                        show: {
+                            authMode: ['dynamic'],
+                            saasAuthType: ['autoRefresh'],
+                        },
+                    },
+                    default: '',
+                    description: 'O Client Secret das Credenciais de Desenvolvedor da Hotmart',
+                },
+                {
+                    displayName: 'Token Basic',
+                    name: 'dynamicBasicToken',
+                    type: 'string',
+                    typeOptions: {
+                        password: true,
+                    },
+                    required: true,
+                    displayOptions: {
+                        show: {
+                            authMode: ['dynamic'],
+                            saasAuthType: ['autoRefresh'],
+                        },
+                    },
+                    default: '',
+                    description: 'O Token Basic das Credenciais de Desenvolvedor da Hotmart (usado para autenticação OAuth)',
                 },
                 {
                     displayName: 'Ambiente',
@@ -132,6 +205,9 @@ class Hotmart {
         const operation = this.getNodeParameter('operation', 0);
         let accessToken;
         let baseUrl;
+        const saasAuthType = authMode === 'dynamic'
+            ? this.getNodeParameter('saasAuthType', 0, 'directToken')
+            : '';
         if (authMode === 'credentials') {
             const credentials = await this.getCredentials('hotmartApi');
             accessToken = await (0, GenericFunctions_1.getAccessToken)({
@@ -141,6 +217,19 @@ class Hotmart {
                 basicToken: credentials.basicToken,
             });
             baseUrl = (0, GenericFunctions_1.getBaseUrl)(credentials.environment);
+        }
+        else if (saasAuthType === 'autoRefresh') {
+            const dynamicClientId = this.getNodeParameter('dynamicClientId', 0);
+            const dynamicClientSecret = this.getNodeParameter('dynamicClientSecret', 0);
+            const dynamicBasicToken = this.getNodeParameter('dynamicBasicToken', 0);
+            const environment = this.getNodeParameter('environment', 0);
+            accessToken = await (0, GenericFunctions_1.getAccessToken)({
+                environment,
+                clientId: dynamicClientId,
+                clientSecret: dynamicClientSecret,
+                basicToken: dynamicBasicToken,
+            });
+            baseUrl = (0, GenericFunctions_1.getBaseUrl)(environment);
         }
         else {
             accessToken = this.getNodeParameter('accessToken', 0);
@@ -152,12 +241,27 @@ class Hotmart {
                 let itemAccessToken = accessToken;
                 let itemBaseUrl = baseUrl;
                 if (authMode === 'dynamic') {
-                    const itemToken = this.getNodeParameter('accessToken', i, '');
-                    if (itemToken) {
-                        itemAccessToken = itemToken;
-                    }
                     const itemEnv = this.getNodeParameter('environment', i, 'production');
                     itemBaseUrl = (0, GenericFunctions_1.getBaseUrl)(itemEnv);
+                    if (saasAuthType === 'autoRefresh') {
+                        const itemClientId = this.getNodeParameter('dynamicClientId', i, '');
+                        const itemClientSecret = this.getNodeParameter('dynamicClientSecret', i, '');
+                        const itemBasicToken = this.getNodeParameter('dynamicBasicToken', i, '');
+                        if (itemClientId && itemClientSecret && itemBasicToken) {
+                            itemAccessToken = await (0, GenericFunctions_1.getAccessToken)({
+                                environment: itemEnv,
+                                clientId: itemClientId,
+                                clientSecret: itemClientSecret,
+                                basicToken: itemBasicToken,
+                            });
+                        }
+                    }
+                    else {
+                        const itemToken = this.getNodeParameter('accessToken', i, '');
+                        if (itemToken) {
+                            itemAccessToken = itemToken;
+                        }
+                    }
                 }
                 let endpoint = '';
                 let method = 'GET';
