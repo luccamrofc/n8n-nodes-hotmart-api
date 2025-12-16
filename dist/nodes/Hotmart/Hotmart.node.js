@@ -60,7 +60,7 @@ class Hotmart {
                     displayOptions: {
                         show: {
                             authMode: ['dynamic'],
-                            resource: ['sales', 'subscriptions', 'products', 'members', 'coupons'],
+                            resource: ['sales', 'subscriptions', 'products', 'members', 'coupons', 'installments'],
                         },
                     },
                     default: '',
@@ -73,7 +73,7 @@ class Hotmart {
                     displayOptions: {
                         show: {
                             authMode: ['dynamic'],
-                            resource: ['sales', 'subscriptions', 'products', 'members', 'coupons'],
+                            resource: ['sales', 'subscriptions', 'products', 'members', 'coupons', 'installments'],
                         },
                     },
                     options: [
@@ -112,6 +112,10 @@ class Hotmart {
                             value: 'coupons',
                         },
                         {
+                            name: 'Negociação de Parcelas',
+                            value: 'installments',
+                        },
+                        {
                             name: 'Produto',
                             value: 'products',
                         },
@@ -134,6 +138,8 @@ class Hotmart {
                 ...descriptions_1.membersFields,
                 ...descriptions_1.couponsOperations,
                 ...descriptions_1.couponsFields,
+                ...descriptions_1.installmentsOperations,
+                ...descriptions_1.installmentsFields,
             ],
         };
     }
@@ -359,6 +365,34 @@ class Hotmart {
                         const couponId = this.getNodeParameter('couponId', i);
                         endpoint = `/products/api/v1/coupon/${couponId}`;
                         method = 'DELETE';
+                    }
+                }
+                if (resource === 'installments') {
+                    if (operation === 'negotiate') {
+                        endpoint = '/payments/api/v1/installments/negotiate';
+                        method = 'POST';
+                        const subscriptionId = this.getNodeParameter('subscriptionId', i);
+                        const recurrencesStr = this.getNodeParameter('recurrences', i);
+                        const paymentType = this.getNodeParameter('paymentType', i);
+                        const recurrences = recurrencesStr.split(',').map(r => parseInt(r.trim(), 10)).filter(r => !isNaN(r));
+                        body = {
+                            subscription_id: parseInt(subscriptionId, 10),
+                            recurrences,
+                            payment_type: paymentType,
+                        };
+                        if (paymentType === 'BILLET') {
+                            const document = this.getNodeParameter('document', i);
+                            body.document = document.replace(/[.\-\/]/g, '');
+                        }
+                        const offerDiscount = this.getNodeParameter('offerDiscount', i, false);
+                        if (offerDiscount) {
+                            const discountType = this.getNodeParameter('discountType', i);
+                            const discountValue = this.getNodeParameter('discountValue', i);
+                            body.discount = {
+                                type: discountType,
+                                value: discountValue,
+                            };
+                        }
                     }
                 }
                 const requestOptions = {

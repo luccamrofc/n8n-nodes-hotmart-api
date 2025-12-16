@@ -22,6 +22,8 @@ import {
     authFields,
     couponsOperations,
     couponsFields,
+    installmentsOperations,
+    installmentsFields,
 } from './descriptions';
 
 import {
@@ -86,7 +88,7 @@ export class Hotmart implements INodeType {
                 displayOptions: {
                     show: {
                         authMode: ['dynamic'],
-                        resource: ['sales', 'subscriptions', 'products', 'members', 'coupons'],
+                        resource: ['sales', 'subscriptions', 'products', 'members', 'coupons', 'installments'],
                     },
                 },
                 default: '',
@@ -99,7 +101,7 @@ export class Hotmart implements INodeType {
                 displayOptions: {
                     show: {
                         authMode: ['dynamic'],
-                        resource: ['sales', 'subscriptions', 'products', 'members', 'coupons'],
+                        resource: ['sales', 'subscriptions', 'products', 'members', 'coupons', 'installments'],
                     },
                 },
                 options: [
@@ -139,6 +141,10 @@ export class Hotmart implements INodeType {
                         value: 'coupons',
                     },
                     {
+                        name: 'Negociação de Parcelas',
+                        value: 'installments',
+                    },
+                    {
                         name: 'Produto',
                         value: 'products',
                     },
@@ -162,6 +168,8 @@ export class Hotmart implements INodeType {
             ...membersFields,
             ...couponsOperations,
             ...couponsFields,
+            ...installmentsOperations,
+            ...installmentsFields,
         ],
     };
 
@@ -416,6 +424,43 @@ export class Hotmart implements INodeType {
                         const couponId = this.getNodeParameter('couponId', i) as string;
                         endpoint = `/products/api/v1/coupon/${couponId}`;
                         method = 'DELETE';
+                    }
+                }
+
+                if (resource === 'installments') {
+                    if (operation === 'negotiate') {
+                        endpoint = '/payments/api/v1/installments/negotiate';
+                        method = 'POST';
+
+                        const subscriptionId = this.getNodeParameter('subscriptionId', i) as string;
+                        const recurrencesStr = this.getNodeParameter('recurrences', i) as string;
+                        const paymentType = this.getNodeParameter('paymentType', i) as string;
+
+                        // Parse recurrences string to array of numbers
+                        const recurrences = recurrencesStr.split(',').map(r => parseInt(r.trim(), 10)).filter(r => !isNaN(r));
+
+                        body = {
+                            subscription_id: parseInt(subscriptionId, 10),
+                            recurrences,
+                            payment_type: paymentType,
+                        };
+
+                        // Add document for BILLET payment type
+                        if (paymentType === 'BILLET') {
+                            const document = this.getNodeParameter('document', i) as string;
+                            body.document = document.replace(/[.\-\/]/g, ''); // Remove formatting
+                        }
+
+                        // Add discount if enabled
+                        const offerDiscount = this.getNodeParameter('offerDiscount', i, false) as boolean;
+                        if (offerDiscount) {
+                            const discountType = this.getNodeParameter('discountType', i) as string;
+                            const discountValue = this.getNodeParameter('discountValue', i) as number;
+                            body.discount = {
+                                type: discountType,
+                                value: discountValue,
+                            };
+                        }
                     }
                 }
 
