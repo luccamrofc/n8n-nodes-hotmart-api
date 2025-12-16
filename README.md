@@ -9,9 +9,9 @@ A Hotmart é uma plataforma de produtos digitais que permite criadores venderem 
 ## 🌟 Funcionalidades Principais
 
 - **Modo Dual de Autenticação**: Suporta tanto credenciais estáticas (uso pessoal) quanto tokens dinâmicos (aplicações SaaS/multi-tenant)
-- **Cobertura Completa da API**: Vendas, Assinaturas, Produtos e Área de Membros
+- **Operação de Autenticação**: Obtenha access tokens diretamente no workflow
+- **Cobertura Completa da API**: Vendas, Assinaturas, Produtos, Área de Membros, Cupons e Negociação de Parcelas
 - **Webhook Trigger**: Receba notificações em tempo real para compras, cancelamentos e mais
-- **Retry Automático**: Se o token expirar durante a execução, o node renova automaticamente
 
 ## Instalação
 
@@ -44,34 +44,21 @@ Passa autenticação dinamicamente por execução. Ideal para:
 - Aplicações SaaS multi-tenant
 - Soluções white-label
 - Plataformas que gerenciam múltiplas contas Hotmart
-- Integrações dinâmicas onde cada usuário tem suas próprias credenciais
 
-O Modo SaaS oferece **duas opções** de autenticação:
+**Fluxo recomendado:**
 
-#### Token Direto (Já Autenticado)
-Use quando você já possui um access token OAuth válido:
-1. Selecione "Token Dinâmico (Modo SaaS)" no Modo de Autenticação
-2. Selecione "Token Direto (Já Autenticado)" no Tipo de Autenticação SaaS
-3. Passe o `accessToken` de um node anterior (ex: do seu banco de dados ou requisição HTTP)
-
-> ⚠️ **Nota**: Neste modo, você é responsável por gerenciar a expiração e renovação do token.
-
-#### Credenciais Dinâmicas (Auto-Refresh) ✨ **NOVO**
-Use quando você quer que o node gerencie automaticamente o access token:
-1. Selecione "Token Dinâmico (Modo SaaS)" no Modo de Autenticação
-2. Selecione "Credenciais Dinâmicas (Auto-Refresh)" no Tipo de Autenticação SaaS
-3. Passe `Client ID`, `Client Secret` e `Token Basic` (podem vir de um node anterior, como do banco de dados)
-4. O node obtém e cacheia o access token automaticamente!
-
-**Vantagens do Auto-Refresh:**
-- 🔄 **Token gerenciado automaticamente**: O node obtém e renova tokens conforme necessário
-- ⚡ **Cache inteligente**: Tokens são cacheados e renovados 5 minutos antes de expirar
-- 🔁 **Retry automático**: Se um token expirar durante a execução, o node tenta novamente
-- 📦 **Batch processing**: Cada item no fluxo pode usar credenciais diferentes
+1. Use a operação **Autenticação > Obter Access Token** para obter o token
+2. Passe o `{{ $json.access_token }}` para os outros nodes Hotmart
 
 ## Operações
 
-### Vendas
+### 🔐 Autenticação
+
+| Operação | Descrição |
+|----------|-----------|
+| Obter Access Token | Obter token OAuth usando Client ID, Client Secret e Token Basic |
+
+### 💰 Vendas
 
 | Operação | Descrição |
 |----------|-----------|
@@ -80,7 +67,7 @@ Use quando você quer que o node gerencie automaticamente o access token:
 | Listar Comissões | Obter comissões de vendas |
 | Detalhes de Preço | Obter detalhes de preço das vendas |
 
-### Assinaturas
+### 📅 Assinaturas
 
 | Operação | Descrição |
 |----------|-----------|
@@ -91,13 +78,13 @@ Use quando você quer que o node gerencie automaticamente o access token:
 | Reativar | Reativar uma assinatura |
 | Alterar Data de Cobrança | Alterar data de cobrança da assinatura |
 
-### Produtos
+### 📦 Produtos
 
 | Operação | Descrição |
 |----------|-----------|
 | Listar Produtos | Obter todos os produtos |
 
-### Área de Membros
+### 🎓 Área de Membros
 
 | Operação | Descrição |
 |----------|-----------|
@@ -105,6 +92,20 @@ Use quando você quer que o node gerencie automaticamente o access token:
 | Listar Módulos | Obter módulos da área de membros |
 | Listar Páginas | Obter páginas de um módulo |
 | Progresso do Aluno | Obter progresso do aluno |
+
+### 🏷️ Cupons
+
+| Operação | Descrição |
+|----------|-----------|
+| Criar Cupom | Criar cupom de desconto para um produto |
+| Listar Cupons | Obter cupons de um produto |
+| Excluir Cupom | Excluir um cupom |
+
+### 💳 Negociação de Parcelas
+
+| Operação | Descrição |
+|----------|-----------|
+| Gerar Negociação | Gerar PIX ou Boleto para negociar parcelas em atraso de inadimplentes |
 
 ## Node Trigger
 
@@ -132,10 +133,23 @@ Para usar este node no **Modo Credenciais**, obtenha as credenciais da API na Ho
 ### Ambiente
 
 Você pode escolher entre:
-- **Produção**: Usa a API de produção da Hotmart
-- **Sandbox**: Usa o ambiente sandbox da Hotmart para testes
+- **Produção**: Usa a API de produção da Hotmart (`https://developers.hotmart.com`)
+- **Sandbox**: Usa o ambiente sandbox da Hotmart (`https://sandbox.hotmart.com`)
 
 > ⚠️ **Importante**: Credenciais de Sandbox só funcionam no ambiente Sandbox e vice-versa. Você precisa criar credenciais separadas para cada ambiente.
+
+## Exemplo de Uso (Modo SaaS)
+
+```
+┌─────────────────────┐     ┌─────────────────────┐
+│   Hotmart Node      │────▶│   Hotmart Node      │
+│   (Autenticação)    │     │   (Vendas/etc)      │
+│                     │     │                     │
+│ • Client ID         │     │ • Token: $json.     │
+│ • Client Secret     │     │   access_token      │
+│ • Token Basic       │     │                     │
+└─────────────────────┘     └─────────────────────┘
+```
 
 ## Recursos
 
