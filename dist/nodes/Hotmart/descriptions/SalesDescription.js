@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.salesFields = exports.salesOperations = void 0;
 exports.salesOperations = [
     {
-        displayName: 'Operation',
+        displayName: 'Operação',
         name: 'operation',
         type: 'options',
         noDataExpression: true,
@@ -14,10 +14,10 @@ exports.salesOperations = [
         },
         options: [
             {
-                name: 'Get Many',
+                name: 'Listar Vendas',
                 value: 'getAll',
-                description: 'Get sales history',
-                action: 'Get sales history',
+                description: 'Obter histórico de vendas',
+                action: 'Listar histórico de vendas',
                 routing: {
                     request: {
                         method: 'GET',
@@ -36,10 +36,10 @@ exports.salesOperations = [
                 },
             },
             {
-                name: 'Get Summary',
+                name: 'Resumo de Vendas',
                 value: 'getSummary',
-                description: 'Get sales summary',
-                action: 'Get sales summary',
+                description: 'Obter resumo de vendas',
+                action: 'Obter resumo de vendas',
                 routing: {
                     request: {
                         method: 'GET',
@@ -48,10 +48,10 @@ exports.salesOperations = [
                 },
             },
             {
-                name: 'Get Commissions',
+                name: 'Listar Comissões',
                 value: 'getCommissions',
-                description: 'Get sales commissions',
-                action: 'Get sales commissions',
+                description: 'Obter comissões de vendas',
+                action: 'Listar comissões de vendas',
                 routing: {
                     request: {
                         method: 'GET',
@@ -70,10 +70,10 @@ exports.salesOperations = [
                 },
             },
             {
-                name: 'Get Price Details',
+                name: 'Detalhes de Preço',
                 value: 'getPriceDetails',
-                description: 'Get price details of a sale',
-                action: 'Get price details of a sale',
+                description: 'Obter detalhes de preço de uma venda',
+                action: 'Obter detalhes de preço',
                 routing: {
                     request: {
                         method: 'GET',
@@ -97,7 +97,7 @@ exports.salesOperations = [
 ];
 exports.salesFields = [
     {
-        displayName: 'Return All',
+        displayName: 'Retornar Todos',
         name: 'returnAll',
         type: 'boolean',
         displayOptions: {
@@ -107,10 +107,10 @@ exports.salesFields = [
             },
         },
         default: false,
-        description: 'Whether to return all results or only up to a given limit',
+        description: 'Se deve retornar todos os resultados ou apenas até um limite',
     },
     {
-        displayName: 'Limit',
+        displayName: 'Limite',
         name: 'limit',
         type: 'number',
         displayOptions: {
@@ -125,7 +125,7 @@ exports.salesFields = [
             maxValue: 500,
         },
         default: 50,
-        description: 'Max number of results to return',
+        description: 'Número máximo de resultados para retornar',
         routing: {
             send: {
                 type: 'query',
@@ -134,10 +134,10 @@ exports.salesFields = [
         },
     },
     {
-        displayName: 'Filters',
+        displayName: 'Filtros',
         name: 'filters',
         type: 'collection',
-        placeholder: 'Add Filter',
+        placeholder: 'Adicionar Filtro',
         default: {},
         displayOptions: {
             show: {
@@ -147,11 +147,11 @@ exports.salesFields = [
         },
         options: [
             {
-                displayName: 'Product ID',
+                displayName: 'ID do Produto',
                 name: 'product_id',
                 type: 'number',
                 default: 0,
-                description: 'Filter by product ID',
+                description: 'Filtrar por ID do produto',
                 routing: {
                     send: {
                         type: 'query',
@@ -160,11 +160,11 @@ exports.salesFields = [
                 },
             },
             {
-                displayName: 'Buyer Email',
+                displayName: 'Email do Comprador',
                 name: 'buyer_email',
                 type: 'string',
                 default: '',
-                description: 'Filter by buyer email',
+                description: 'Filtrar por email do comprador',
                 routing: {
                     send: {
                         type: 'query',
@@ -173,11 +173,11 @@ exports.salesFields = [
                 },
             },
             {
-                displayName: 'Start Date',
+                displayName: 'Data Inicial',
                 name: 'start_date',
                 type: 'dateTime',
                 default: '',
-                description: 'Filter sales from this date (timestamp in milliseconds)',
+                description: 'Filtrar vendas a partir desta data',
                 routing: {
                     send: {
                         type: 'query',
@@ -187,11 +187,11 @@ exports.salesFields = [
                 },
             },
             {
-                displayName: 'End Date',
+                displayName: 'Data Final',
                 name: 'end_date',
                 type: 'dateTime',
                 default: '',
-                description: 'Filter sales until this date (timestamp in milliseconds)',
+                description: 'Filtrar vendas até esta data',
                 routing: {
                     send: {
                         type: 'query',
@@ -201,32 +201,32 @@ exports.salesFields = [
                 },
             },
             {
-                displayName: 'Transaction Status',
+                displayName: 'Status da Transação',
                 name: 'transaction_status',
                 type: 'options',
                 options: [
-                    { name: 'Approved', value: 'APPROVED' },
-                    { name: 'Blocked', value: 'BLOCKED' },
-                    { name: 'Cancelled', value: 'CANCELLED' },
+                    { name: 'Aprovada', value: 'APPROVED' },
+                    { name: 'Bloqueada', value: 'BLOCKED' },
+                    { name: 'Cancelada', value: 'CANCELLED' },
                     { name: 'Chargeback', value: 'CHARGEBACK' },
-                    { name: 'Complete', value: 'COMPLETE' },
-                    { name: 'Delayed', value: 'DELAYED' },
-                    { name: 'Expired', value: 'EXPIRED' },
-                    { name: 'No Funds', value: 'NO_FUNDS' },
-                    { name: 'Overdue', value: 'OVERDUE' },
-                    { name: 'Partially Refunded', value: 'PARTIALLY_REFUNDED' },
-                    { name: 'Pending Payment', value: 'PENDING_PAYMENT' },
-                    { name: 'Pre Order', value: 'PRE_ORDER' },
-                    { name: 'Printed Billet', value: 'PRINTED_BILLET' },
-                    { name: 'Processing Transaction', value: 'PROCESSING_TRANSACTION' },
-                    { name: 'Protest', value: 'PROTEST' },
-                    { name: 'Refunded', value: 'REFUNDED' },
-                    { name: 'Started', value: 'STARTED' },
-                    { name: 'Under Analysis', value: 'UNDER_ANALYSIS' },
-                    { name: 'Waiting Payment', value: 'WAITING_PAYMENT' },
+                    { name: 'Completa', value: 'COMPLETE' },
+                    { name: 'Atrasada', value: 'DELAYED' },
+                    { name: 'Expirada', value: 'EXPIRED' },
+                    { name: 'Sem Fundos', value: 'NO_FUNDS' },
+                    { name: 'Vencida', value: 'OVERDUE' },
+                    { name: 'Parcialmente Reembolsada', value: 'PARTIALLY_REFUNDED' },
+                    { name: 'Aguardando Pagamento', value: 'PENDING_PAYMENT' },
+                    { name: 'Pré-venda', value: 'PRE_ORDER' },
+                    { name: 'Boleto Impresso', value: 'PRINTED_BILLET' },
+                    { name: 'Processando', value: 'PROCESSING_TRANSACTION' },
+                    { name: 'Em Disputa', value: 'PROTEST' },
+                    { name: 'Reembolsada', value: 'REFUNDED' },
+                    { name: 'Iniciada', value: 'STARTED' },
+                    { name: 'Em Análise', value: 'UNDER_ANALYSIS' },
+                    { name: 'Aguardando Pagamento', value: 'WAITING_PAYMENT' },
                 ],
                 default: 'APPROVED',
-                description: 'Filter by transaction status',
+                description: 'Filtrar por status da transação',
                 routing: {
                     send: {
                         type: 'query',
@@ -235,11 +235,11 @@ exports.salesFields = [
                 },
             },
             {
-                displayName: 'Transaction',
+                displayName: 'Código da Transação',
                 name: 'transaction',
                 type: 'string',
                 default: '',
-                description: 'Filter by transaction code',
+                description: 'Filtrar por código da transação',
                 routing: {
                     send: {
                         type: 'query',
@@ -248,15 +248,15 @@ exports.salesFields = [
                 },
             },
             {
-                displayName: 'Sales Source',
+                displayName: 'Origem da Venda',
                 name: 'sales_source',
                 type: 'options',
                 options: [
-                    { name: 'Producer', value: 'PRODUCER' },
-                    { name: 'Affiliate', value: 'AFFILIATE' },
+                    { name: 'Produtor', value: 'PRODUCER' },
+                    { name: 'Afiliado', value: 'AFFILIATE' },
                 ],
                 default: 'PRODUCER',
-                description: 'Filter by sales source',
+                description: 'Filtrar por origem da venda',
                 routing: {
                     send: {
                         type: 'query',

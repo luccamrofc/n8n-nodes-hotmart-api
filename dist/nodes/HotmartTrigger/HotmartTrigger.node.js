@@ -10,7 +10,7 @@ class HotmartTrigger {
             group: ['trigger'],
             version: 1,
             subtitle: '={{$parameter["event"]}}',
-            description: 'Starts the workflow when a Hotmart webhook event occurs',
+            description: 'Inicia o workflow quando um evento webhook da Hotmart ocorre',
             defaults: {
                 name: 'Hotmart Trigger',
             },
@@ -26,89 +26,89 @@ class HotmartTrigger {
             ],
             properties: [
                 {
-                    displayName: 'Event',
+                    displayName: 'Evento',
                     name: 'event',
                     type: 'options',
                     noDataExpression: true,
                     options: [
                         {
-                            name: 'All Events',
+                            name: 'Todos os Eventos',
                             value: 'all',
-                            description: 'Trigger on any Hotmart webhook event',
+                            description: 'Disparar em qualquer evento webhook da Hotmart',
                         },
                         {
-                            name: 'Purchase Approved',
+                            name: 'Compra Aprovada',
                             value: 'PURCHASE_APPROVED',
-                            description: 'Trigger when a purchase is approved',
+                            description: 'Disparar quando uma compra é aprovada',
                         },
                         {
-                            name: 'Purchase Billet Printed',
+                            name: 'Boleto Impresso',
                             value: 'PURCHASE_BILLET_PRINTED',
-                            description: 'Trigger when a billet is printed',
+                            description: 'Disparar quando um boleto é impresso',
                         },
                         {
-                            name: 'Purchase Canceled',
+                            name: 'Compra Cancelada',
                             value: 'PURCHASE_CANCELED',
-                            description: 'Trigger when a purchase is canceled',
+                            description: 'Disparar quando uma compra é cancelada',
                         },
                         {
-                            name: 'Purchase Chargeback',
+                            name: 'Chargeback',
                             value: 'PURCHASE_CHARGEBACK',
-                            description: 'Trigger when a chargeback occurs',
+                            description: 'Disparar quando ocorre um chargeback',
                         },
                         {
-                            name: 'Purchase Complete',
+                            name: 'Compra Completa',
                             value: 'PURCHASE_COMPLETE',
-                            description: 'Trigger when a purchase is completed',
+                            description: 'Disparar quando uma compra é completada',
                         },
                         {
-                            name: 'Purchase Delayed',
+                            name: 'Compra Atrasada',
                             value: 'PURCHASE_DELAYED',
-                            description: 'Trigger when a purchase is delayed',
+                            description: 'Disparar quando uma compra está atrasada',
                         },
                         {
-                            name: 'Purchase Expired',
+                            name: 'Compra Expirada',
                             value: 'PURCHASE_EXPIRED',
-                            description: 'Trigger when a purchase expires',
+                            description: 'Disparar quando uma compra expira',
                         },
                         {
-                            name: 'Purchase Out of Shopping Cart',
+                            name: 'Abandono de Carrinho',
                             value: 'PURCHASE_OUT_OF_SHOPPING_CART',
-                            description: 'Trigger when purchase is out of shopping cart',
+                            description: 'Disparar quando há abandono de carrinho',
                         },
                         {
-                            name: 'Purchase Protest',
+                            name: 'Disputa Aberta',
                             value: 'PURCHASE_PROTEST',
-                            description: 'Trigger when a dispute is opened',
+                            description: 'Disparar quando uma disputa é aberta',
                         },
                         {
-                            name: 'Purchase Refunded',
+                            name: 'Compra Reembolsada',
                             value: 'PURCHASE_REFUNDED',
-                            description: 'Trigger when a purchase is refunded',
+                            description: 'Disparar quando uma compra é reembolsada',
                         },
                         {
-                            name: 'Subscription Cancellation',
+                            name: 'Cancelamento de Assinatura',
                             value: 'SUBSCRIPTION_CANCELLATION',
-                            description: 'Trigger when a subscription is cancelled',
+                            description: 'Disparar quando uma assinatura é cancelada',
                         },
                         {
-                            name: 'Switch Plan',
+                            name: 'Troca de Plano',
                             value: 'SWITCH_PLAN',
-                            description: 'Trigger when a subscription plan changes',
+                            description: 'Disparar quando um plano de assinatura muda',
                         },
                     ],
                     default: 'all',
-                    description: 'The event to listen for',
+                    description: 'O evento para escutar',
                 },
                 {
-                    displayName: 'Hottok (Secret)',
+                    displayName: 'Hottok (Segredo)',
                     name: 'hottok',
                     type: 'string',
                     typeOptions: {
                         password: true,
                     },
                     default: '',
-                    description: 'Optional: The Hottok secret from your Hotmart webhook settings. If set, requests without a matching hottok will be rejected.',
+                    description: 'Opcional: O segredo Hottok das configurações de webhook da Hotmart. Se configurado, requisições sem um hottok válido serão rejeitadas.',
                 },
             ],
         };
@@ -123,7 +123,7 @@ class HotmartTrigger {
                 return {
                     webhookResponse: {
                         status: 401,
-                        body: 'Unauthorized: Invalid hottok',
+                        body: 'Não autorizado: Hottok inválido',
                     },
                 };
             }
@@ -133,7 +133,7 @@ class HotmartTrigger {
             return {
                 webhookResponse: {
                     status: 200,
-                    body: 'Event ignored',
+                    body: 'Evento ignorado',
                 },
             };
         }

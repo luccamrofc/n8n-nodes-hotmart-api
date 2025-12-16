@@ -2,7 +2,7 @@ import type { INodeProperties } from 'n8n-workflow';
 
 export const subscriptionsOperations: INodeProperties[] = [
     {
-        displayName: 'Operation',
+        displayName: 'Operação',
         name: 'operation',
         type: 'options',
         noDataExpression: true,
@@ -13,10 +13,10 @@ export const subscriptionsOperations: INodeProperties[] = [
         },
         options: [
             {
-                name: 'Get Many',
+                name: 'Listar Assinaturas',
                 value: 'getAll',
-                description: 'Get all subscriptions',
-                action: 'Get all subscriptions',
+                description: 'Obter todas as assinaturas',
+                action: 'Listar todas as assinaturas',
                 routing: {
                     request: {
                         method: 'GET',
@@ -35,10 +35,10 @@ export const subscriptionsOperations: INodeProperties[] = [
                 },
             },
             {
-                name: 'Get Summary',
+                name: 'Resumo de Assinaturas',
                 value: 'getSummary',
-                description: 'Get subscriptions summary',
-                action: 'Get subscriptions summary',
+                description: 'Obter resumo das assinaturas',
+                action: 'Obter resumo das assinaturas',
                 routing: {
                     request: {
                         method: 'GET',
@@ -47,10 +47,10 @@ export const subscriptionsOperations: INodeProperties[] = [
                 },
             },
             {
-                name: 'Get Purchases',
+                name: 'Compras de Assinatura',
                 value: 'getPurchases',
-                description: 'Get subscription purchases',
-                action: 'Get subscription purchases',
+                description: 'Obter compras de assinatura',
+                action: 'Listar compras de assinatura',
                 routing: {
                     request: {
                         method: 'GET',
@@ -69,10 +69,10 @@ export const subscriptionsOperations: INodeProperties[] = [
                 },
             },
             {
-                name: 'Cancel',
+                name: 'Cancelar Assinatura',
                 value: 'cancel',
-                description: 'Cancel a subscription',
-                action: 'Cancel a subscription',
+                description: 'Cancelar uma assinatura',
+                action: 'Cancelar uma assinatura',
                 routing: {
                     request: {
                         method: 'POST',
@@ -81,10 +81,10 @@ export const subscriptionsOperations: INodeProperties[] = [
                 },
             },
             {
-                name: 'Reactivate',
+                name: 'Reativar Assinatura',
                 value: 'reactivate',
-                description: 'Reactivate a subscription',
-                action: 'Reactivate a subscription',
+                description: 'Reativar uma assinatura',
+                action: 'Reativar uma assinatura',
                 routing: {
                     request: {
                         method: 'POST',
@@ -93,10 +93,10 @@ export const subscriptionsOperations: INodeProperties[] = [
                 },
             },
             {
-                name: 'Change Billing Date',
+                name: 'Alterar Data de Cobrança',
                 value: 'changeBillingDate',
-                description: 'Change subscription billing date',
-                action: 'Change subscription billing date',
+                description: 'Alterar data de cobrança da assinatura',
+                action: 'Alterar data de cobrança',
                 routing: {
                     request: {
                         method: 'PATCH',
@@ -114,10 +114,10 @@ export const subscriptionsOperations: INodeProperties[] = [
 
 export const subscriptionsFields: INodeProperties[] = [
     // ----------------------------------
-    //         Cancel / Reactivate / Change Billing Date
+    //         Cancelar / Reativar / Alterar Data
     // ----------------------------------
     {
-        displayName: 'Subscriber Code',
+        displayName: 'Código do Assinante',
         name: 'subscriberCode',
         type: 'string',
         required: true,
@@ -128,10 +128,10 @@ export const subscriptionsFields: INodeProperties[] = [
             },
         },
         default: '',
-        description: 'The subscriber code to operate on',
+        description: 'O código do assinante para operar',
     },
     {
-        displayName: 'Due Day',
+        displayName: 'Dia de Vencimento',
         name: 'dueDay',
         type: 'number',
         required: true,
@@ -146,10 +146,10 @@ export const subscriptionsFields: INodeProperties[] = [
             maxValue: 28,
         },
         default: 1,
-        description: 'The new due day for billing (1-28)',
+        description: 'O novo dia de vencimento para cobrança (1-28)',
     },
     {
-        displayName: 'Send Email',
+        displayName: 'Enviar Email',
         name: 'sendMail',
         type: 'boolean',
         displayOptions: {
@@ -159,7 +159,7 @@ export const subscriptionsFields: INodeProperties[] = [
             },
         },
         default: true,
-        description: 'Whether to send email notification to the subscriber',
+        description: 'Se deve enviar notificação por email ao assinante',
         routing: {
             send: {
                 type: 'query',
@@ -168,10 +168,10 @@ export const subscriptionsFields: INodeProperties[] = [
         },
     },
     // ----------------------------------
-    //         Get Many / Get Purchases
+    //         Listar
     // ----------------------------------
     {
-        displayName: 'Return All',
+        displayName: 'Retornar Todos',
         name: 'returnAll',
         type: 'boolean',
         displayOptions: {
@@ -181,10 +181,10 @@ export const subscriptionsFields: INodeProperties[] = [
             },
         },
         default: false,
-        description: 'Whether to return all results or only up to a given limit',
+        description: 'Se deve retornar todos os resultados ou apenas até um limite',
     },
     {
-        displayName: 'Limit',
+        displayName: 'Limite',
         name: 'limit',
         type: 'number',
         displayOptions: {
@@ -199,7 +199,7 @@ export const subscriptionsFields: INodeProperties[] = [
             maxValue: 500,
         },
         default: 50,
-        description: 'Max number of results to return',
+        description: 'Número máximo de resultados para retornar',
         routing: {
             send: {
                 type: 'query',
@@ -208,10 +208,10 @@ export const subscriptionsFields: INodeProperties[] = [
         },
     },
     {
-        displayName: 'Filters',
+        displayName: 'Filtros',
         name: 'filters',
         type: 'collection',
-        placeholder: 'Add Filter',
+        placeholder: 'Adicionar Filtro',
         default: {},
         displayOptions: {
             show: {
@@ -221,11 +221,11 @@ export const subscriptionsFields: INodeProperties[] = [
         },
         options: [
             {
-                displayName: 'Product ID',
+                displayName: 'ID do Produto',
                 name: 'product_id',
                 type: 'number',
                 default: 0,
-                description: 'Filter by product ID',
+                description: 'Filtrar por ID do produto',
                 routing: {
                     send: {
                         type: 'query',
@@ -234,11 +234,11 @@ export const subscriptionsFields: INodeProperties[] = [
                 },
             },
             {
-                displayName: 'Plan',
+                displayName: 'Plano',
                 name: 'plan',
                 type: 'string',
                 default: '',
-                description: 'Filter by subscription plan',
+                description: 'Filtrar por plano de assinatura',
                 routing: {
                     send: {
                         type: 'query',
@@ -247,11 +247,11 @@ export const subscriptionsFields: INodeProperties[] = [
                 },
             },
             {
-                displayName: 'Subscriber Code',
+                displayName: 'Código do Assinante',
                 name: 'subscriber_code',
                 type: 'string',
                 default: '',
-                description: 'Filter by subscriber code',
+                description: 'Filtrar por código do assinante',
                 routing: {
                     send: {
                         type: 'query',
@@ -260,11 +260,11 @@ export const subscriptionsFields: INodeProperties[] = [
                 },
             },
             {
-                displayName: 'Subscriber Email',
+                displayName: 'Email do Assinante',
                 name: 'subscriber_email',
                 type: 'string',
                 default: '',
-                description: 'Filter by subscriber email',
+                description: 'Filtrar por email do assinante',
                 routing: {
                     send: {
                         type: 'query',
@@ -277,19 +277,19 @@ export const subscriptionsFields: INodeProperties[] = [
                 name: 'status',
                 type: 'options',
                 options: [
-                    { name: 'Active', value: 'ACTIVE' },
-                    { name: 'Cancelled By Admin', value: 'CANCELLED_BY_ADMIN' },
-                    { name: 'Cancelled By Customer', value: 'CANCELLED_BY_CUSTOMER' },
-                    { name: 'Cancelled By Seller', value: 'CANCELLED_BY_SELLER' },
-                    { name: 'Delayed', value: 'DELAYED' },
-                    { name: 'Expired', value: 'EXPIRED' },
-                    { name: 'Inactive', value: 'INACTIVE' },
-                    { name: 'Overdue', value: 'OVERDUE' },
-                    { name: 'Started', value: 'STARTED' },
+                    { name: 'Ativa', value: 'ACTIVE' },
+                    { name: 'Cancelada pelo Admin', value: 'CANCELLED_BY_ADMIN' },
+                    { name: 'Cancelada pelo Cliente', value: 'CANCELLED_BY_CUSTOMER' },
+                    { name: 'Cancelada pelo Vendedor', value: 'CANCELLED_BY_SELLER' },
+                    { name: 'Atrasada', value: 'DELAYED' },
+                    { name: 'Expirada', value: 'EXPIRED' },
+                    { name: 'Inativa', value: 'INACTIVE' },
+                    { name: 'Vencida', value: 'OVERDUE' },
+                    { name: 'Iniciada', value: 'STARTED' },
                     { name: 'Trial', value: 'TRIAL' },
                 ],
                 default: 'ACTIVE',
-                description: 'Filter by subscription status',
+                description: 'Filtrar por status da assinatura',
                 routing: {
                     send: {
                         type: 'query',
@@ -298,11 +298,11 @@ export const subscriptionsFields: INodeProperties[] = [
                 },
             },
             {
-                displayName: 'Start Date',
+                displayName: 'Data Inicial',
                 name: 'accession_date',
                 type: 'dateTime',
                 default: '',
-                description: 'Filter subscriptions from this date',
+                description: 'Filtrar assinaturas a partir desta data',
                 routing: {
                     send: {
                         type: 'query',
@@ -312,11 +312,11 @@ export const subscriptionsFields: INodeProperties[] = [
                 },
             },
             {
-                displayName: 'End Date',
+                displayName: 'Data Final',
                 name: 'end_accession_date',
                 type: 'dateTime',
                 default: '',
-                description: 'Filter subscriptions until this date',
+                description: 'Filtrar assinaturas até esta data',
                 routing: {
                     send: {
                         type: 'query',
@@ -326,11 +326,11 @@ export const subscriptionsFields: INodeProperties[] = [
                 },
             },
             {
-                displayName: 'Transaction',
+                displayName: 'Código da Transação',
                 name: 'transaction',
                 type: 'string',
                 default: '',
-                description: 'Filter by transaction code',
+                description: 'Filtrar por código da transação',
                 routing: {
                     send: {
                         type: 'query',

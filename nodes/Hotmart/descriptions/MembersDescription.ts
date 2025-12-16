@@ -2,7 +2,7 @@ import type { INodeProperties } from 'n8n-workflow';
 
 export const membersOperations: INodeProperties[] = [
     {
-        displayName: 'Operation',
+        displayName: 'Operação',
         name: 'operation',
         type: 'options',
         noDataExpression: true,
@@ -13,10 +13,10 @@ export const membersOperations: INodeProperties[] = [
         },
         options: [
             {
-                name: 'Get Students',
+                name: 'Listar Alunos',
                 value: 'getStudents',
-                description: 'Get students list from member area',
-                action: 'Get students from member area',
+                description: 'Obter lista de alunos da área de membros',
+                action: 'Listar alunos da área de membros',
                 routing: {
                     request: {
                         method: 'GET',
@@ -35,10 +35,10 @@ export const membersOperations: INodeProperties[] = [
                 },
             },
             {
-                name: 'Get Modules',
+                name: 'Listar Módulos',
                 value: 'getModules',
-                description: 'Get modules from a member area',
-                action: 'Get modules from member area',
+                description: 'Obter módulos de uma área de membros',
+                action: 'Listar módulos da área de membros',
                 routing: {
                     request: {
                         method: 'GET',
@@ -57,10 +57,10 @@ export const membersOperations: INodeProperties[] = [
                 },
             },
             {
-                name: 'Get Pages',
+                name: 'Listar Páginas',
                 value: 'getPages',
-                description: 'Get pages from a module',
-                action: 'Get pages from a module',
+                description: 'Obter páginas de um módulo',
+                action: 'Listar páginas de um módulo',
                 routing: {
                     request: {
                         method: 'GET',
@@ -79,10 +79,10 @@ export const membersOperations: INodeProperties[] = [
                 },
             },
             {
-                name: 'Get Student Progress',
+                name: 'Progresso do Aluno',
                 value: 'getStudentProgress',
-                description: "Get a student's progress in a product",
-                action: 'Get student progress',
+                description: 'Obter progresso de um aluno em um produto',
+                action: 'Obter progresso do aluno',
                 routing: {
                     request: {
                         method: 'GET',
@@ -97,10 +97,10 @@ export const membersOperations: INodeProperties[] = [
 
 export const membersFields: INodeProperties[] = [
     // ----------------------------------
-    //         Common: Subdomain
+    //         Comum: Subdomínio
     // ----------------------------------
     {
-        displayName: 'Subdomain',
+        displayName: 'Subdomínio',
         name: 'subdomain',
         type: 'string',
         required: true,
@@ -110,13 +110,13 @@ export const membersFields: INodeProperties[] = [
             },
         },
         default: '',
-        description: 'The subdomain of your member area (e.g., "myproduct" from myproduct.club.hotmart.com)',
+        description: 'O subdomínio da sua área de membros (ex: "meuproduto" de meuproduto.club.hotmart.com)',
     },
     // ----------------------------------
-    //         Get Pages
+    //         Listar Páginas
     // ----------------------------------
     {
-        displayName: 'Module ID',
+        displayName: 'ID do Módulo',
         name: 'moduleId',
         type: 'string',
         required: true,
@@ -127,13 +127,13 @@ export const membersFields: INodeProperties[] = [
             },
         },
         default: '',
-        description: 'The ID of the module to get pages from',
+        description: 'O ID do módulo para obter as páginas',
     },
     // ----------------------------------
-    //         Get Student Progress
+    //         Progresso do Aluno
     // ----------------------------------
     {
-        displayName: 'User ID',
+        displayName: 'ID do Usuário',
         name: 'userId',
         type: 'string',
         required: true,
@@ -144,13 +144,13 @@ export const membersFields: INodeProperties[] = [
             },
         },
         default: '',
-        description: 'The ID of the student/user',
+        description: 'O ID do aluno/usuário',
     },
     // ----------------------------------
-    //         Get Students / Modules
+    //         Listar Alunos / Módulos
     // ----------------------------------
     {
-        displayName: 'Return All',
+        displayName: 'Retornar Todos',
         name: 'returnAll',
         type: 'boolean',
         displayOptions: {
@@ -160,10 +160,10 @@ export const membersFields: INodeProperties[] = [
             },
         },
         default: false,
-        description: 'Whether to return all results or only up to a given limit',
+        description: 'Se deve retornar todos os resultados ou apenas até um limite',
     },
     {
-        displayName: 'Limit',
+        displayName: 'Limite',
         name: 'limit',
         type: 'number',
         displayOptions: {
@@ -178,7 +178,7 @@ export const membersFields: INodeProperties[] = [
             maxValue: 500,
         },
         default: 50,
-        description: 'Max number of results to return',
+        description: 'Número máximo de resultados para retornar',
         routing: {
             send: {
                 type: 'query',
@@ -187,10 +187,10 @@ export const membersFields: INodeProperties[] = [
         },
     },
     {
-        displayName: 'Filters',
+        displayName: 'Filtros',
         name: 'filters',
         type: 'collection',
-        placeholder: 'Add Filter',
+        placeholder: 'Adicionar Filtro',
         default: {},
         displayOptions: {
             show: {
@@ -204,7 +204,7 @@ export const membersFields: INodeProperties[] = [
                 name: 'email',
                 type: 'string',
                 default: '',
-                description: "Filter by student's email",
+                description: 'Filtrar por email do aluno',
                 routing: {
                     send: {
                         type: 'query',
@@ -213,11 +213,11 @@ export const membersFields: INodeProperties[] = [
                 },
             },
             {
-                displayName: 'Name',
+                displayName: 'Nome',
                 name: 'name',
                 type: 'string',
                 default: '',
-                description: "Filter by student's name",
+                description: 'Filtrar por nome do aluno',
                 routing: {
                     send: {
                         type: 'query',
@@ -230,11 +230,11 @@ export const membersFields: INodeProperties[] = [
                 name: 'status',
                 type: 'options',
                 options: [
-                    { name: 'Active', value: 'ACTIVE' },
-                    { name: 'Inactive', value: 'INACTIVE' },
+                    { name: 'Ativo', value: 'ACTIVE' },
+                    { name: 'Inativo', value: 'INACTIVE' },
                 ],
                 default: 'ACTIVE',
-                description: "Filter by student's status",
+                description: 'Filtrar por status do aluno',
                 routing: {
                     send: {
                         type: 'query',

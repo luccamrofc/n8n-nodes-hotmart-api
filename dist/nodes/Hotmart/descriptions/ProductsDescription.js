@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.productsFields = exports.productsOperations = void 0;
 exports.productsOperations = [
     {
-        displayName: 'Operation',
+        displayName: 'Operação',
         name: 'operation',
         type: 'options',
         noDataExpression: true,
@@ -14,10 +14,10 @@ exports.productsOperations = [
         },
         options: [
             {
-                name: 'Get Many',
+                name: 'Listar Produtos',
                 value: 'getAll',
-                description: 'Get all products',
-                action: 'Get all products',
+                description: 'Obter todos os produtos',
+                action: 'Listar todos os produtos',
                 routing: {
                     request: {
                         method: 'GET',
@@ -41,7 +41,7 @@ exports.productsOperations = [
 ];
 exports.productsFields = [
     {
-        displayName: 'Return All',
+        displayName: 'Retornar Todos',
         name: 'returnAll',
         type: 'boolean',
         displayOptions: {
@@ -51,10 +51,10 @@ exports.productsFields = [
             },
         },
         default: false,
-        description: 'Whether to return all results or only up to a given limit',
+        description: 'Se deve retornar todos os resultados ou apenas até um limite',
     },
     {
-        displayName: 'Limit',
+        displayName: 'Limite',
         name: 'limit',
         type: 'number',
         displayOptions: {
@@ -69,7 +69,7 @@ exports.productsFields = [
             maxValue: 500,
         },
         default: 50,
-        description: 'Max number of results to return',
+        description: 'Número máximo de resultados para retornar',
         routing: {
             send: {
                 type: 'query',
@@ -78,10 +78,10 @@ exports.productsFields = [
         },
     },
     {
-        displayName: 'Filters',
+        displayName: 'Filtros',
         name: 'filters',
         type: 'collection',
-        placeholder: 'Add Filter',
+        placeholder: 'Adicionar Filtro',
         default: {},
         displayOptions: {
             show: {
@@ -91,11 +91,11 @@ exports.productsFields = [
         },
         options: [
             {
-                displayName: 'Product ID',
+                displayName: 'ID do Produto',
                 name: 'id',
                 type: 'number',
                 default: 0,
-                description: 'Filter by specific product ID',
+                description: 'Filtrar por ID específico do produto',
                 routing: {
                     send: {
                         type: 'query',
@@ -104,11 +104,11 @@ exports.productsFields = [
                 },
             },
             {
-                displayName: 'Product Name',
+                displayName: 'Nome do Produto',
                 name: 'name',
                 type: 'string',
                 default: '',
-                description: 'Filter by product name',
+                description: 'Filtrar por nome do produto',
                 routing: {
                     send: {
                         type: 'query',

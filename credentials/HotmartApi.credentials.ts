@@ -8,16 +8,16 @@ import type {
 export class HotmartApi implements ICredentialType {
     name = 'hotmartApi';
     displayName = 'Hotmart API';
-    documentationUrl = 'https://developers.hotmart.com/docs/en/';
+    documentationUrl = 'https://developers.hotmart.com/docs/pt-BR/';
 
     properties: INodeProperties[] = [
         {
-            displayName: 'Environment',
+            displayName: 'Ambiente',
             name: 'environment',
             type: 'options',
             options: [
                 {
-                    name: 'Production',
+                    name: 'Produção',
                     value: 'production',
                 },
                 {
@@ -26,7 +26,7 @@ export class HotmartApi implements ICredentialType {
                 },
             ],
             default: 'production',
-            description: 'Choose between Production or Sandbox environment',
+            description: 'Escolha entre ambiente de Produção ou Sandbox',
         },
         {
             displayName: 'Client ID',
@@ -34,7 +34,7 @@ export class HotmartApi implements ICredentialType {
             type: 'string',
             default: '',
             required: true,
-            description: 'The Client ID from Hotmart Developer Credentials',
+            description: 'O Client ID das Credenciais de Desenvolvedor da Hotmart',
         },
         {
             displayName: 'Client Secret',
@@ -45,10 +45,10 @@ export class HotmartApi implements ICredentialType {
             },
             default: '',
             required: true,
-            description: 'The Client Secret from Hotmart Developer Credentials',
+            description: 'O Client Secret das Credenciais de Desenvolvedor da Hotmart',
         },
         {
-            displayName: 'Basic Token',
+            displayName: 'Token Basic',
             name: 'basicToken',
             type: 'string',
             typeOptions: {
@@ -56,7 +56,7 @@ export class HotmartApi implements ICredentialType {
             },
             default: '',
             required: true,
-            description: 'The Basic Token from Hotmart Developer Credentials (used for OAuth authentication)',
+            description: 'O Token Basic das Credenciais de Desenvolvedor da Hotmart (usado para autenticação OAuth)',
         },
     ];
 

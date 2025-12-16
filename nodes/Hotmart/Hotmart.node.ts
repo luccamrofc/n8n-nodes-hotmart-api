@@ -31,7 +31,7 @@ export class Hotmart implements INodeType {
         group: ['transform'],
         version: 1,
         subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
-        description: 'Consume Hotmart API with support for both static credentials and dynamic tokens (SaaS mode)',
+        description: 'Integração com a API da Hotmart com suporte a credenciais estáticas e tokens dinâmicos (modo SaaS)',
         defaults: {
             name: 'Hotmart',
         },
@@ -51,27 +51,27 @@ export class Hotmart implements INodeType {
         properties: [
             // Auth Mode Selector - FIRST PROPERTY
             {
-                displayName: 'Authentication Mode',
+                displayName: 'Modo de Autenticação',
                 name: 'authMode',
                 type: 'options',
                 options: [
                     {
-                        name: 'Credentials (Personal Use)',
+                        name: 'Credenciais (Uso Pessoal)',
                         value: 'credentials',
-                        description: 'Use n8n saved credentials - ideal for personal/single-tenant use',
+                        description: 'Usar credenciais salvas no n8n - ideal para uso pessoal/single-tenant',
                     },
                     {
-                        name: 'Dynamic Token (SaaS Mode)',
+                        name: 'Token Dinâmico (Modo SaaS)',
                         value: 'dynamic',
-                        description: 'Pass access token dynamically - ideal for multi-tenant SaaS applications',
+                        description: 'Passar token de acesso dinamicamente - ideal para aplicações multi-tenant SaaS',
                     },
                 ],
                 default: 'credentials',
-                description: 'Choose how to authenticate with Hotmart API',
+                description: 'Escolha como autenticar com a API da Hotmart',
             },
             // Dynamic Token Fields (shown only in SaaS mode)
             {
-                displayName: 'Access Token',
+                displayName: 'Token de Acesso',
                 name: 'accessToken',
                 type: 'string',
                 typeOptions: {
@@ -84,10 +84,10 @@ export class Hotmart implements INodeType {
                     },
                 },
                 default: '',
-                description: 'The Hotmart OAuth access token. Can be passed dynamically from a previous node (e.g., from your database or OAuth flow).',
+                description: 'O token de acesso OAuth da Hotmart. Pode ser passado dinamicamente de um node anterior (ex: do seu banco de dados ou fluxo OAuth).',
             },
             {
-                displayName: 'Environment',
+                displayName: 'Ambiente',
                 name: 'environment',
                 type: 'options',
                 required: true,
@@ -98,7 +98,7 @@ export class Hotmart implements INodeType {
                 },
                 options: [
                     {
-                        name: 'Production',
+                        name: 'Produção',
                         value: 'production',
                     },
                     {
@@ -107,29 +107,29 @@ export class Hotmart implements INodeType {
                     },
                 ],
                 default: 'production',
-                description: 'The Hotmart environment to use',
+                description: 'O ambiente da Hotmart para usar',
             },
             // Resource Selector
             {
-                displayName: 'Resource',
+                displayName: 'Recurso',
                 name: 'resource',
                 type: 'options',
                 noDataExpression: true,
                 options: [
                     {
-                        name: 'Member Area',
+                        name: 'Área de Membros',
                         value: 'members',
                     },
                     {
-                        name: 'Product',
+                        name: 'Produto',
                         value: 'products',
                     },
                     {
-                        name: 'Sale',
+                        name: 'Venda',
                         value: 'sales',
                     },
                     {
-                        name: 'Subscription',
+                        name: 'Assinatura',
                         value: 'subscriptions',
                     },
                 ],

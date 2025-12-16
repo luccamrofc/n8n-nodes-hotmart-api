@@ -5,15 +5,15 @@ class HotmartApi {
     constructor() {
         this.name = 'hotmartApi';
         this.displayName = 'Hotmart API';
-        this.documentationUrl = 'https://developers.hotmart.com/docs/en/';
+        this.documentationUrl = 'https://developers.hotmart.com/docs/pt-BR/';
         this.properties = [
             {
-                displayName: 'Environment',
+                displayName: 'Ambiente',
                 name: 'environment',
                 type: 'options',
                 options: [
                     {
-                        name: 'Production',
+                        name: 'Produção',
                         value: 'production',
                     },
                     {
@@ -22,7 +22,7 @@ class HotmartApi {
                     },
                 ],
                 default: 'production',
-                description: 'Choose between Production or Sandbox environment',
+                description: 'Escolha entre ambiente de Produção ou Sandbox',
             },
             {
                 displayName: 'Client ID',
@@ -30,7 +30,7 @@ class HotmartApi {
                 type: 'string',
                 default: '',
                 required: true,
-                description: 'The Client ID from Hotmart Developer Credentials',
+                description: 'O Client ID das Credenciais de Desenvolvedor da Hotmart',
             },
             {
                 displayName: 'Client Secret',
@@ -41,10 +41,10 @@ class HotmartApi {
                 },
                 default: '',
                 required: true,
-                description: 'The Client Secret from Hotmart Developer Credentials',
+                description: 'O Client Secret das Credenciais de Desenvolvedor da Hotmart',
             },
             {
-                displayName: 'Basic Token',
+                displayName: 'Token Basic',
                 name: 'basicToken',
                 type: 'string',
                 typeOptions: {
@@ -52,7 +52,7 @@ class HotmartApi {
                 },
                 default: '',
                 required: true,
-                description: 'The Basic Token from Hotmart Developer Credentials (used for OAuth authentication)',
+                description: 'O Token Basic das Credenciais de Desenvolvedor da Hotmart (usado para autenticação OAuth)',
             },
         ];
         this.authenticate = {
