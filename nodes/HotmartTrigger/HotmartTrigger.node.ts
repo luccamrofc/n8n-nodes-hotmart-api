@@ -10,7 +10,7 @@ export class HotmartTrigger implements INodeType {
     description: INodeTypeDescription = {
         displayName: 'Hotmart Trigger',
         name: 'hotmartTrigger',
-        icon: 'file:../Hotmart/hotmart.svg',
+        icon: 'file:hotmart.png',
         group: ['trigger'],
         version: 1,
         subtitle: '={{$parameter["event"]}}',

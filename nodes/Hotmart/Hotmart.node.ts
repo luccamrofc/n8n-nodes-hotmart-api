@@ -27,11 +27,11 @@ export class Hotmart implements INodeType {
     description: INodeTypeDescription = {
         displayName: 'Hotmart',
         name: 'hotmart',
-        icon: 'file:hotmart.svg',
+        icon: 'file:hotmart.png',
         group: ['transform'],
         version: 1,
         subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
-        description: 'Consume Hotmart API',
+        description: 'Consume Hotmart API with support for both static credentials and dynamic tokens (SaaS mode)',
         defaults: {
             name: 'Hotmart',
         },
@@ -41,16 +41,75 @@ export class Hotmart implements INodeType {
             {
                 name: 'hotmartApi',
                 required: true,
+                displayOptions: {
+                    show: {
+                        authMode: ['credentials'],
+                    },
+                },
             },
         ],
-        requestDefaults: {
-            baseURL: '={{$credentials.environment === "sandbox" ? "https://sandbox.hotmart.com" : "https://api-hot-connect.hotmart.com"}}',
-            headers: {
-                Accept: 'application/json',
-                'Content-Type': 'application/json',
-            },
-        },
         properties: [
+            // Auth Mode Selector - FIRST PROPERTY
+            {
+                displayName: 'Authentication Mode',
+                name: 'authMode',
+                type: 'options',
+                options: [
+                    {
+                        name: 'Credentials (Personal Use)',
+                        value: 'credentials',
+                        description: 'Use n8n saved credentials - ideal for personal/single-tenant use',
+                    },
+                    {
+                        name: 'Dynamic Token (SaaS Mode)',
+                        value: 'dynamic',
+                        description: 'Pass access token dynamically - ideal for multi-tenant SaaS applications',
+                    },
+                ],
+                default: 'credentials',
+                description: 'Choose how to authenticate with Hotmart API',
+            },
+            // Dynamic Token Fields (shown only in SaaS mode)
+            {
+                displayName: 'Access Token',
+                name: 'accessToken',
+                type: 'string',
+                typeOptions: {
+                    password: true,
+                },
+                required: true,
+                displayOptions: {
+                    show: {
+                        authMode: ['dynamic'],
+                    },
+                },
+                default: '',
+                description: 'The Hotmart OAuth access token. Can be passed dynamically from a previous node (e.g., from your database or OAuth flow).',
+            },
+            {
+                displayName: 'Environment',
+                name: 'environment',
+                type: 'options',
+                required: true,
+                displayOptions: {
+                    show: {
+                        authMode: ['dynamic'],
+                    },
+                },
+                options: [
+                    {
+                        name: 'Production',
+                        value: 'production',
+                    },
+                    {
+                        name: 'Sandbox',
+                        value: 'sandbox',
+                    },
+                ],
+                default: 'production',
+                description: 'The Hotmart environment to use',
+            },
+            // Resource Selector
             {
                 displayName: 'Resource',
                 name: 'resource',
@@ -92,22 +151,47 @@ export class Hotmart implements INodeType {
         const items = this.getInputData();
         const returnData: INodeExecutionData[] = [];
 
+        const authMode = this.getNodeParameter('authMode', 0) as string;
         const resource = this.getNodeParameter('resource', 0) as string;
         const operation = this.getNodeParameter('operation', 0) as string;
 
-        // Get credentials and access token
-        const credentials = await this.getCredentials('hotmartApi');
-        const accessToken = await getAccessToken({
-            environment: credentials.environment as 'production' | 'sandbox',
-            clientId: credentials.clientId as string,
-            clientSecret: credentials.clientSecret as string,
-            basicToken: credentials.basicToken as string,
-        });
+        let accessToken: string;
+        let baseUrl: string;
 
-        const baseUrl = getBaseUrl(credentials.environment as string);
+        // Get authentication based on mode
+        if (authMode === 'credentials') {
+            // Traditional n8n credentials mode
+            const credentials = await this.getCredentials('hotmartApi');
+            accessToken = await getAccessToken({
+                environment: credentials.environment as 'production' | 'sandbox',
+                clientId: credentials.clientId as string,
+                clientSecret: credentials.clientSecret as string,
+                basicToken: credentials.basicToken as string,
+            });
+            baseUrl = getBaseUrl(credentials.environment as string);
+        } else {
+            // Dynamic/SaaS mode - token passed directly
+            accessToken = this.getNodeParameter('accessToken', 0) as string;
+            const environment = this.getNodeParameter('environment', 0) as string;
+            baseUrl = getBaseUrl(environment);
+        }
 
         for (let i = 0; i < items.length; i++) {
             try {
+                // In SaaS mode, allow different tokens per item
+                let itemAccessToken = accessToken;
+                let itemBaseUrl = baseUrl;
+
+                if (authMode === 'dynamic') {
+                    // Check if this item has its own token (for batch processing)
+                    const itemToken = this.getNodeParameter('accessToken', i, '') as string;
+                    if (itemToken) {
+                        itemAccessToken = itemToken;
+                    }
+                    const itemEnv = this.getNodeParameter('environment', i, 'production') as string;
+                    itemBaseUrl = getBaseUrl(itemEnv);
+                }
+
                 let endpoint = '';
                 let method: IHttpRequestMethods = 'GET';
                 const qs: IDataObject = {};
@@ -223,9 +307,9 @@ export class Hotmart implements INodeType {
                 // Make the API request
                 const requestOptions = {
                     method,
-                    url: `${baseUrl}${endpoint}`,
+                    url: `${itemBaseUrl}${endpoint}`,
                     headers: {
-                        Authorization: `Bearer ${accessToken}`,
+                        Authorization: `Bearer ${itemAccessToken}`,
                         'Content-Type': 'application/json',
                     },
                     qs,

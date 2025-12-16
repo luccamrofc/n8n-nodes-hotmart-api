@@ -6,6 +6,12 @@ Hotmart is a digital products platform that allows creators to sell online cours
 
 [n8n](https://n8n.io/) is a [fair-code licensed](https://docs.n8n.io/reference/license/) workflow automation platform.
 
+## 🌟 Key Features
+
+- **Dual Authentication Mode**: Supports both static credentials (personal use) and dynamic tokens (SaaS/multi-tenant applications)
+- **Complete API Coverage**: Sales, Subscriptions, Products, and Members Area
+- **Webhook Trigger**: Receive real-time notifications for purchases, cancellations, and more
+
 ## Installation
 
 Follow the [installation guide](https://docs.n8n.io/integrations/community-nodes/installation/) in the n8n community nodes documentation.
@@ -22,9 +28,29 @@ npm install n8n-nodes-hotmart-api
 2. Search for `n8n-nodes-hotmart-api`
 3. Click **Install**
 
-## Operations
+## Authentication Modes
 
-This node supports the following resources and operations:
+### 🔒 Credentials Mode (Personal Use)
+
+Use n8n's built-in credential system. Ideal for:
+- Personal projects
+- Single-tenant applications
+- Fixed Hotmart account integration
+
+### 🚀 Dynamic Token Mode (SaaS Mode)
+
+Pass access tokens dynamically per execution. Ideal for:
+- Multi-tenant SaaS applications
+- White-label solutions
+- Platforms managing multiple Hotmart accounts
+- Dynamic integrations where each user has their own Hotmart credentials
+
+**How to use SaaS Mode:**
+1. Select "Dynamic Token (SaaS Mode)" in Authentication Mode
+2. Pass the `accessToken` from a previous node (e.g., from your database, OAuth flow, or HTTP request)
+3. Each workflow execution can use a different Hotmart account!
+
+## Operations
 
 ### Sales
 
@@ -75,9 +101,9 @@ The **Hotmart Trigger** node allows you to receive webhooks from Hotmart for the
 - Switch Plan
 - And more...
 
-## Credentials
+## Credentials Setup
 
-To use this node, you need to obtain API credentials from Hotmart:
+To use this node in **Credentials Mode**, obtain API credentials from Hotmart:
 
 1. Log in to your Hotmart account
 2. Go to **Tools > Developer Credentials**

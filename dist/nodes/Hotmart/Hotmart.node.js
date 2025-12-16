@@ -8,11 +8,11 @@ class Hotmart {
         this.description = {
             displayName: 'Hotmart',
             name: 'hotmart',
-            icon: 'file:hotmart.svg',
+            icon: 'file:hotmart.png',
             group: ['transform'],
             version: 1,
             subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
-            description: 'Consume Hotmart API',
+            description: 'Consume Hotmart API with support for both static credentials and dynamic tokens (SaaS mode)',
             defaults: {
                 name: 'Hotmart',
             },
@@ -22,16 +22,72 @@ class Hotmart {
                 {
                     name: 'hotmartApi',
                     required: true,
+                    displayOptions: {
+                        show: {
+                            authMode: ['credentials'],
+                        },
+                    },
                 },
             ],
-            requestDefaults: {
-                baseURL: '={{$credentials.environment === "sandbox" ? "https://sandbox.hotmart.com" : "https://api-hot-connect.hotmart.com"}}',
-                headers: {
-                    Accept: 'application/json',
-                    'Content-Type': 'application/json',
-                },
-            },
             properties: [
+                {
+                    displayName: 'Authentication Mode',
+                    name: 'authMode',
+                    type: 'options',
+                    options: [
+                        {
+                            name: 'Credentials (Personal Use)',
+                            value: 'credentials',
+                            description: 'Use n8n saved credentials - ideal for personal/single-tenant use',
+                        },
+                        {
+                            name: 'Dynamic Token (SaaS Mode)',
+                            value: 'dynamic',
+                            description: 'Pass access token dynamically - ideal for multi-tenant SaaS applications',
+                        },
+                    ],
+                    default: 'credentials',
+                    description: 'Choose how to authenticate with Hotmart API',
+                },
+                {
+                    displayName: 'Access Token',
+                    name: 'accessToken',
+                    type: 'string',
+                    typeOptions: {
+                        password: true,
+                    },
+                    required: true,
+                    displayOptions: {
+                        show: {
+                            authMode: ['dynamic'],
+                        },
+                    },
+                    default: '',
+                    description: 'The Hotmart OAuth access token. Can be passed dynamically from a previous node (e.g., from your database or OAuth flow).',
+                },
+                {
+                    displayName: 'Environment',
+                    name: 'environment',
+                    type: 'options',
+                    required: true,
+                    displayOptions: {
+                        show: {
+                            authMode: ['dynamic'],
+                        },
+                    },
+                    options: [
+                        {
+                            name: 'Production',
+                            value: 'production',
+                        },
+                        {
+                            name: 'Sandbox',
+                            value: 'sandbox',
+                        },
+                    ],
+                    default: 'production',
+                    description: 'The Hotmart environment to use',
+                },
                 {
                     displayName: 'Resource',
                     name: 'resource',
@@ -71,18 +127,38 @@ class Hotmart {
     async execute() {
         const items = this.getInputData();
         const returnData = [];
+        const authMode = this.getNodeParameter('authMode', 0);
         const resource = this.getNodeParameter('resource', 0);
         const operation = this.getNodeParameter('operation', 0);
-        const credentials = await this.getCredentials('hotmartApi');
-        const accessToken = await (0, GenericFunctions_1.getAccessToken)({
-            environment: credentials.environment,
-            clientId: credentials.clientId,
-            clientSecret: credentials.clientSecret,
-            basicToken: credentials.basicToken,
-        });
-        const baseUrl = (0, GenericFunctions_1.getBaseUrl)(credentials.environment);
+        let accessToken;
+        let baseUrl;
+        if (authMode === 'credentials') {
+            const credentials = await this.getCredentials('hotmartApi');
+            accessToken = await (0, GenericFunctions_1.getAccessToken)({
+                environment: credentials.environment,
+                clientId: credentials.clientId,
+                clientSecret: credentials.clientSecret,
+                basicToken: credentials.basicToken,
+            });
+            baseUrl = (0, GenericFunctions_1.getBaseUrl)(credentials.environment);
+        }
+        else {
+            accessToken = this.getNodeParameter('accessToken', 0);
+            const environment = this.getNodeParameter('environment', 0);
+            baseUrl = (0, GenericFunctions_1.getBaseUrl)(environment);
+        }
         for (let i = 0; i < items.length; i++) {
             try {
+                let itemAccessToken = accessToken;
+                let itemBaseUrl = baseUrl;
+                if (authMode === 'dynamic') {
+                    const itemToken = this.getNodeParameter('accessToken', i, '');
+                    if (itemToken) {
+                        itemAccessToken = itemToken;
+                    }
+                    const itemEnv = this.getNodeParameter('environment', i, 'production');
+                    itemBaseUrl = (0, GenericFunctions_1.getBaseUrl)(itemEnv);
+                }
                 let endpoint = '';
                 let method = 'GET';
                 const qs = {};
@@ -189,9 +265,9 @@ class Hotmart {
                 }
                 const requestOptions = {
                     method,
-                    url: `${baseUrl}${endpoint}`,
+                    url: `${itemBaseUrl}${endpoint}`,
                     headers: {
-                        Authorization: `Bearer ${accessToken}`,
+                        Authorization: `Bearer ${itemAccessToken}`,
                         'Content-Type': 'application/json',
                     },
                     qs,
