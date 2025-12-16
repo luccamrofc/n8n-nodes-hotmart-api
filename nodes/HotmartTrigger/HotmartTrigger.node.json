@@ -1,0 +1,27 @@
+{
+    "node": "n8n-nodes-hotmart-api.HotmartTrigger",
+    "nodeVersion": "1.0",
+    "codexVersion": "1.0",
+    "categories": [
+        "Sales",
+        "Marketing & Content"
+    ],
+    "resources": {
+        "credentialDocumentation": [
+            {
+                "url": "https://developers.hotmart.com/docs/en/"
+            }
+        ],
+        "primaryDocumentation": [
+            {
+                "url": "https://developers.hotmart.com/docs/en/"
+            }
+        ]
+    },
+    "alias": [
+        "hotmart",
+        "webhook",
+        "trigger",
+        "purchase"
+    ]
+}
