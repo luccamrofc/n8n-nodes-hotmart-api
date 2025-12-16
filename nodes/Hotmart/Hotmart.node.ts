@@ -5,7 +5,9 @@ import type {
     INodeTypeDescription,
     IHttpRequestMethods,
     IDataObject,
+    JsonObject,
 } from 'n8n-workflow';
+import { NodeApiError } from 'n8n-workflow';
 
 import {
     salesOperations,
@@ -396,11 +398,16 @@ export class Hotmart implements INodeType {
                     returnData.push({ json: response as IDataObject });
                 }
             } catch (error) {
+                // Extract error message safely to avoid circular reference issues
+                const err = error as { message?: string; response?: { data?: { message?: string } }; statusCode?: number };
+                const errorMessage = err.response?.data?.message || err.message || 'Erro desconhecido na requisição';
+
                 if (this.continueOnFail()) {
-                    returnData.push({ json: { error: (error as Error).message } });
+                    returnData.push({ json: { error: errorMessage } });
                     continue;
                 }
-                throw error;
+
+                throw new NodeApiError(this.getNode(), { message: errorMessage } as JsonObject);
             }
         }
 

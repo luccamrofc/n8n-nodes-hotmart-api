@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Hotmart = void 0;
+const n8n_workflow_1 = require("n8n-workflow");
 const descriptions_1 = require("./descriptions");
 const GenericFunctions_1 = require("./GenericFunctions");
 class Hotmart {
@@ -131,6 +132,7 @@ class Hotmart {
         };
     }
     async execute() {
+        var _a, _b;
         const items = this.getInputData();
         const returnData = [];
         const authMode = this.getNodeParameter('authMode', 0);
@@ -342,11 +344,13 @@ class Hotmart {
                 }
             }
             catch (error) {
+                const err = error;
+                const errorMessage = ((_b = (_a = err.response) === null || _a === void 0 ? void 0 : _a.data) === null || _b === void 0 ? void 0 : _b.message) || err.message || 'Erro desconhecido na requisição';
                 if (this.continueOnFail()) {
-                    returnData.push({ json: { error: error.message } });
+                    returnData.push({ json: { error: errorMessage } });
                     continue;
                 }
-                throw error;
+                throw new n8n_workflow_1.NodeApiError(this.getNode(), { message: errorMessage });
             }
         }
         return [returnData];
