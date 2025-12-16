@@ -1,126 +1,129 @@
 # n8n-nodes-hotmart-api
 
-This is an n8n community node for the [Hotmart](https://www.hotmart.com) API.
+Este é um community node do n8n para a API da [Hotmart](https://www.hotmart.com).
 
-Hotmart is a digital products platform that allows creators to sell online courses, ebooks, software, and other digital products. This node allows you to interact with the Hotmart API directly from your n8n workflows.
+A Hotmart é uma plataforma de produtos digitais que permite criadores venderem cursos online, ebooks, softwares e outros produtos digitais. Este node permite que você interaja com a API da Hotmart diretamente dos seus workflows n8n.
 
-[n8n](https://n8n.io/) is a [fair-code licensed](https://docs.n8n.io/reference/license/) workflow automation platform.
+[n8n](https://n8n.io/) é uma plataforma de automação de workflows com [licença fair-code](https://docs.n8n.io/reference/license/).
 
-## 🌟 Key Features
+## 🌟 Funcionalidades Principais
 
-- **Dual Authentication Mode**: Supports both static credentials (personal use) and dynamic tokens (SaaS/multi-tenant applications)
-- **Complete API Coverage**: Sales, Subscriptions, Products, and Members Area
-- **Webhook Trigger**: Receive real-time notifications for purchases, cancellations, and more
+- **Modo Dual de Autenticação**: Suporta tanto credenciais estáticas (uso pessoal) quanto tokens dinâmicos (aplicações SaaS/multi-tenant)
+- **Cobertura Completa da API**: Vendas, Assinaturas, Produtos e Área de Membros
+- **Webhook Trigger**: Receba notificações em tempo real para compras, cancelamentos e mais
+- **Retry Automático**: Se o token expirar durante a execução, o node renova automaticamente
 
-## Installation
+## Instalação
 
-Follow the [installation guide](https://docs.n8n.io/integrations/community-nodes/installation/) in the n8n community nodes documentation.
+Siga o [guia de instalação](https://docs.n8n.io/integrations/community-nodes/installation/) na documentação de community nodes do n8n.
 
-### Using npm
+### Usando npm
 
 ```bash
 npm install n8n-nodes-hotmart-api
 ```
 
-### Using n8n UI
+### Usando a Interface do n8n
 
-1. Go to **Settings > Community Nodes**
-2. Search for `n8n-nodes-hotmart-api`
-3. Click **Install**
+1. Vá para **Settings > Community Nodes**
+2. Busque por `n8n-nodes-hotmart-api`
+3. Clique em **Install**
 
-## Authentication Modes
+## Modos de Autenticação
 
-### 🔒 Credentials Mode (Personal Use)
+### 🔒 Modo Credenciais (Uso Pessoal)
 
-Use n8n's built-in credential system. Ideal for:
-- Personal projects
-- Single-tenant applications
-- Fixed Hotmart account integration
+Usa o sistema de credenciais nativo do n8n. Ideal para:
+- Projetos pessoais
+- Aplicações single-tenant
+- Integração com conta Hotmart fixa
 
-### 🚀 Dynamic Token Mode (SaaS Mode)
+### 🚀 Modo Token Dinâmico (Modo SaaS)
 
-Pass access tokens dynamically per execution. Ideal for:
-- Multi-tenant SaaS applications
-- White-label solutions
-- Platforms managing multiple Hotmart accounts
-- Dynamic integrations where each user has their own Hotmart credentials
+Passa tokens de acesso dinamicamente por execução. Ideal para:
+- Aplicações SaaS multi-tenant
+- Soluções white-label
+- Plataformas que gerenciam múltiplas contas Hotmart
+- Integrações dinâmicas onde cada usuário tem suas próprias credenciais
 
-**How to use SaaS Mode:**
-1. Select "Dynamic Token (SaaS Mode)" in Authentication Mode
-2. Pass the `accessToken` from a previous node (e.g., from your database, OAuth flow, or HTTP request)
-3. Each workflow execution can use a different Hotmart account!
+**Como usar o Modo SaaS:**
+1. Selecione "Token Dinâmico (Modo SaaS)" no Modo de Autenticação
+2. Passe o `accessToken` de um node anterior (ex: do seu banco de dados, fluxo OAuth ou requisição HTTP)
+3. Cada execução do workflow pode usar uma conta Hotmart diferente!
 
-## Operations
+## Operações
 
-### Sales
+### Vendas
 
-| Operation | Description |
-|-----------|-------------|
-| Get Many | Get sales history with filters |
-| Get Summary | Get sales summary |
-| Get Commissions | Get sales commissions |
-| Get Price Details | Get price details of sales |
+| Operação | Descrição |
+|----------|-----------|
+| Listar Vendas | Obter histórico de vendas com filtros |
+| Resumo de Vendas | Obter resumo das vendas |
+| Listar Comissões | Obter comissões de vendas |
+| Detalhes de Preço | Obter detalhes de preço das vendas |
 
-### Subscriptions
+### Assinaturas
 
-| Operation | Description |
-|-----------|-------------|
-| Get Many | Get all subscriptions |
-| Get Summary | Get subscriptions summary |
-| Get Purchases | Get subscription purchases |
-| Cancel | Cancel a subscription |
-| Reactivate | Reactivate a subscription |
-| Change Billing Date | Change subscription billing date |
+| Operação | Descrição |
+|----------|-----------|
+| Listar Assinaturas | Obter todas as assinaturas |
+| Resumo de Assinaturas | Obter resumo das assinaturas |
+| Compras de Assinatura | Obter compras da assinatura |
+| Cancelar | Cancelar uma assinatura |
+| Reativar | Reativar uma assinatura |
+| Alterar Data de Cobrança | Alterar data de cobrança da assinatura |
 
-### Products
+### Produtos
 
-| Operation | Description |
-|-----------|-------------|
-| Get Many | Get all products |
+| Operação | Descrição |
+|----------|-----------|
+| Listar Produtos | Obter todos os produtos |
 
-### Member Area
+### Área de Membros
 
-| Operation | Description |
-|-----------|-------------|
-| Get Students | Get students from member area |
-| Get Modules | Get modules from member area |
-| Get Pages | Get pages from a module |
-| Get Student Progress | Get student progress |
+| Operação | Descrição |
+|----------|-----------|
+| Listar Alunos | Obter alunos da área de membros |
+| Listar Módulos | Obter módulos da área de membros |
+| Listar Páginas | Obter páginas de um módulo |
+| Progresso do Aluno | Obter progresso do aluno |
 
-## Trigger Node
+## Node Trigger
 
-The **Hotmart Trigger** node allows you to receive webhooks from Hotmart for the following events:
+O node **Hotmart Trigger** permite receber webhooks da Hotmart para os seguintes eventos:
 
-- Purchase Approved
-- Purchase Complete
-- Purchase Canceled
-- Purchase Refunded
-- Purchase Chargeback
-- Purchase Protest
-- Subscription Cancellation
-- Switch Plan
-- And more...
+- Compra Aprovada
+- Compra Completa
+- Compra Cancelada
+- Compra Reembolsada
+- Chargeback
+- Disputa Aberta
+- Cancelamento de Assinatura
+- Troca de Plano
+- E mais...
 
-## Credentials Setup
+## Configuração de Credenciais
 
-To use this node in **Credentials Mode**, obtain API credentials from Hotmart:
+Para usar este node no **Modo Credenciais**, obtenha as credenciais da API na Hotmart:
 
-1. Log in to your Hotmart account
-2. Go to **Tools > Developer Credentials**
-3. Create a new credential
-4. Copy the **Client ID**, **Client Secret**, and **Basic Token**
+1. Faça login na sua conta Hotmart
+2. Vá para **Ferramentas > Credenciais Developers**
+3. Crie uma nova credencial
+4. Copie o **Client ID**, **Client Secret** e **Token Basic**
 
-### Environment
+### Ambiente
 
-You can choose between:
-- **Production**: Uses the live Hotmart API
-- **Sandbox**: Uses the Hotmart sandbox environment for testing
+Você pode escolher entre:
+- **Produção**: Usa a API de produção da Hotmart
+- **Sandbox**: Usa o ambiente sandbox da Hotmart para testes
 
-## Resources
+> ⚠️ **Importante**: Credenciais de Sandbox só funcionam no ambiente Sandbox e vice-versa. Você precisa criar credenciais separadas para cada ambiente.
 
-- [Hotmart API Documentation](https://developers.hotmart.com/docs/en/)
-- [n8n Community Nodes Documentation](https://docs.n8n.io/integrations/community-nodes/)
+## Recursos
 
-## License
+- [Documentação da API Hotmart](https://developers.hotmart.com/docs/pt-BR/)
+- [Documentação de Community Nodes n8n](https://docs.n8n.io/integrations/community-nodes/)
+
+## Licença
 
 [MIT](LICENSE.md)
