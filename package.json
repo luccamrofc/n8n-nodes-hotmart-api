@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-hotmart-api",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "n8n community node for Hotmart API integration - Sales, Subscriptions, Products and Members Area",
   "keywords": [
     "n8n-community-node-package",
