@@ -111,6 +111,8 @@ Passa autenticação dinamicamente por execução. Ideal para:
 
 O node **Hotmart Trigger** permite receber webhooks da Hotmart para os seguintes eventos:
 
+> ⚠️ **Segurança**: Configure sempre o campo **Hottok** no trigger para validar que as requisições vêm realmente da Hotmart. Sem o Hottok configurado, qualquer pessoa que descobrir a URL do webhook pode enviar dados falsos ao seu workflow.
+
 - Compra Aprovada
 - Compra Completa
 - Compra Cancelada
