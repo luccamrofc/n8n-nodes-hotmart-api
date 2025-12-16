@@ -65,17 +65,7 @@ exports.membersOperations = [
                 routing: {
                     request: {
                         method: 'GET',
-                        url: '=/club/api/v2/{{$parameter.subdomain}}/modules/{{$parameter.moduleId}}/pages',
-                    },
-                    output: {
-                        postReceive: [
-                            {
-                                type: 'rootProperty',
-                                properties: {
-                                    property: 'items',
-                                },
-                            },
-                        ],
+                        url: '=/club/api/v2/modules/{{$parameter.moduleId}}/pages',
                     },
                 },
             },
@@ -104,10 +94,31 @@ exports.membersFields = [
         displayOptions: {
             show: {
                 resource: ['members'],
+                operation: ['getStudents', 'getModules', 'getStudentProgress'],
             },
         },
         default: '',
         description: 'O subdomínio da sua área de membros (ex: "meuproduto" de meuproduto.club.hotmart.com)',
+    },
+    {
+        displayName: 'ID do Produto',
+        name: 'productId',
+        type: 'number',
+        required: true,
+        displayOptions: {
+            show: {
+                resource: ['members'],
+                operation: ['getPages'],
+            },
+        },
+        default: 0,
+        description: 'Identificador único (ID) do produto',
+        routing: {
+            send: {
+                type: 'query',
+                property: 'product_id',
+            },
+        },
     },
     {
         displayName: 'ID do Módulo',
@@ -183,7 +194,7 @@ exports.membersFields = [
         displayOptions: {
             show: {
                 resource: ['members'],
-                operation: ['getStudents'],
+                operation: ['getStudents', 'getModules'],
             },
         },
         options: [
@@ -227,6 +238,19 @@ exports.membersFields = [
                     send: {
                         type: 'query',
                         property: 'status',
+                    },
+                },
+            },
+            {
+                displayName: 'Módulos Extras',
+                name: 'is_extra',
+                type: 'boolean',
+                default: false,
+                description: 'Se verdadeiro, retorna apenas os módulos extras. Se falso, retorna apenas os módulos principais.',
+                routing: {
+                    send: {
+                        type: 'query',
+                        property: 'is_extra',
                     },
                 },
             },

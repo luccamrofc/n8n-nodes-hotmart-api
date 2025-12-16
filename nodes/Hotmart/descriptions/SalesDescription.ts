@@ -90,15 +90,61 @@ export const salesOperations: INodeProperties[] = [
                     },
                 },
             },
+            {
+                name: 'Participantes de Vendas',
+                value: 'getUsers',
+                description: 'Obter informações dos participantes das vendas',
+                action: 'Listar participantes de vendas',
+                routing: {
+                    request: {
+                        method: 'GET',
+                        url: '/payments/api/v1/sales/users',
+                    },
+                    output: {
+                        postReceive: [
+                            {
+                                type: 'rootProperty',
+                                properties: {
+                                    property: 'items',
+                                },
+                            },
+                        ],
+                    },
+                },
+            },
+            {
+                name: 'Reembolsar Venda',
+                value: 'refund',
+                description: 'Solicitar reembolso de uma venda',
+                action: 'Reembolsar venda',
+                routing: {
+                    request: {
+                        method: 'PUT',
+                        url: '=/payments/api/v1/sales/{{$parameter.transactionCode}}/refund',
+                    },
+                },
+            },
         ],
         default: 'getAll',
     },
 ];
 
 export const salesFields: INodeProperties[] = [
-    // ----------------------------------
-    //         Filtros Comuns
-    // ----------------------------------
+    {
+        displayName: 'Código da Transação',
+        name: 'transactionCode',
+        type: 'string',
+        required: true,
+        displayOptions: {
+            show: {
+                resource: ['sales'],
+                operation: ['refund'],
+            },
+        },
+        default: '',
+        placeholder: 'HP17715690036014',
+        description: 'Código único de referência da transação a ser reembolsada',
+    },
     {
         displayName: 'Retornar Todos',
         name: 'returnAll',
@@ -106,7 +152,7 @@ export const salesFields: INodeProperties[] = [
         displayOptions: {
             show: {
                 resource: ['sales'],
-                operation: ['getAll', 'getCommissions', 'getPriceDetails'],
+                operation: ['getAll', 'getCommissions', 'getPriceDetails', 'getSummary', 'getUsers'],
             },
         },
         default: false,
@@ -119,7 +165,7 @@ export const salesFields: INodeProperties[] = [
         displayOptions: {
             show: {
                 resource: ['sales'],
-                operation: ['getAll', 'getCommissions', 'getPriceDetails'],
+                operation: ['getAll', 'getCommissions', 'getPriceDetails', 'getSummary', 'getUsers'],
                 returnAll: [false],
             },
         },
@@ -145,7 +191,7 @@ export const salesFields: INodeProperties[] = [
         displayOptions: {
             show: {
                 resource: ['sales'],
-                operation: ['getAll', 'getCommissions', 'getPriceDetails', 'getSummary'],
+                operation: ['getAll', 'getCommissions', 'getPriceDetails', 'getSummary', 'getUsers'],
             },
         },
         options: [
@@ -172,6 +218,19 @@ export const salesFields: INodeProperties[] = [
                     send: {
                         type: 'query',
                         property: 'buyer_email',
+                    },
+                },
+            },
+            {
+                displayName: 'Nome do Comprador',
+                name: 'buyer_name',
+                type: 'string',
+                default: '',
+                description: 'Filtrar por nome da pessoa compradora',
+                routing: {
+                    send: {
+                        type: 'query',
+                        property: 'buyer_name',
                     },
                 },
             },
@@ -213,19 +272,17 @@ export const salesFields: INodeProperties[] = [
                     { name: 'Cancelada', value: 'CANCELLED' },
                     { name: 'Chargeback', value: 'CHARGEBACK' },
                     { name: 'Completa', value: 'COMPLETE' },
-                    { name: 'Atrasada', value: 'DELAYED' },
                     { name: 'Expirada', value: 'EXPIRED' },
                     { name: 'Sem Fundos', value: 'NO_FUNDS' },
                     { name: 'Vencida', value: 'OVERDUE' },
                     { name: 'Parcialmente Reembolsada', value: 'PARTIALLY_REFUNDED' },
-                    { name: 'Aguardando Pagamento', value: 'PENDING_PAYMENT' },
                     { name: 'Pré-venda', value: 'PRE_ORDER' },
                     { name: 'Boleto Impresso', value: 'PRINTED_BILLET' },
                     { name: 'Processando', value: 'PROCESSING_TRANSACTION' },
-                    { name: 'Em Disputa', value: 'PROTEST' },
+                    { name: 'Em Disputa', value: 'PROTESTED' },
                     { name: 'Reembolsada', value: 'REFUNDED' },
                     { name: 'Iniciada', value: 'STARTED' },
-                    { name: 'Em Análise', value: 'UNDER_ANALYSIS' },
+                    { name: 'Em Análise', value: 'UNDER_ANALISYS' },
                     { name: 'Aguardando Pagamento', value: 'WAITING_PAYMENT' },
                 ],
                 default: 'APPROVED',
@@ -251,19 +308,86 @@ export const salesFields: INodeProperties[] = [
                 },
             },
             {
-                displayName: 'Origem da Venda',
+                displayName: 'Origem (SRC)',
                 name: 'sales_source',
-                type: 'options',
-                options: [
-                    { name: 'Produtor', value: 'PRODUCER' },
-                    { name: 'Afiliado', value: 'AFFILIATE' },
-                ],
-                default: 'PRODUCER',
-                description: 'Filtrar por origem da venda',
+                type: 'string',
+                default: '',
+                placeholder: 'nomedacampanha',
+                description: 'Código SRC utilizado no link da página de pagamento',
                 routing: {
                     send: {
                         type: 'query',
                         property: 'sales_source',
+                    },
+                },
+            },
+            {
+                displayName: 'Nome do Afiliado',
+                name: 'affiliate_name',
+                type: 'string',
+                default: '',
+                description: 'Nome da pessoa Afiliada responsável pela venda',
+                routing: {
+                    send: {
+                        type: 'query',
+                        property: 'affiliate_name',
+                    },
+                },
+            },
+            {
+                displayName: 'Tipo de Pagamento',
+                name: 'payment_type',
+                type: 'options',
+                options: [
+                    { name: 'Boleto', value: 'BILLET' },
+                    { name: 'Cartão de Crédito', value: 'CREDIT_CARD' },
+                    { name: 'Débito Direto', value: 'DIRECT_DEBIT' },
+                    { name: 'Google Pay', value: 'GOOGLE_PAY' },
+                    { name: 'PayPal', value: 'PAYPAL' },
+                    { name: 'PayPal Internacional', value: 'PAYPAL_INTERNACIONAL' },
+                    { name: 'PicPay', value: 'PICPAY' },
+                    { name: 'Pix', value: 'PIX' },
+                    { name: 'Samsung Pay', value: 'SAMSUNG_PAY' },
+                    { name: 'Transferência Bancária', value: 'DIRECT_BANK_TRANSFER' },
+                    { name: 'Wallet', value: 'WALLET' },
+                ],
+                default: 'CREDIT_CARD',
+                description: 'Filtrar por tipo de pagamento',
+                routing: {
+                    send: {
+                        type: 'query',
+                        property: 'payment_type',
+                    },
+                },
+            },
+            {
+                displayName: 'Código da Oferta',
+                name: 'offer_code',
+                type: 'string',
+                default: '',
+                description: 'Filtrar por código de oferta do produto',
+                routing: {
+                    send: {
+                        type: 'query',
+                        property: 'offer_code',
+                    },
+                },
+            },
+            {
+                displayName: 'Comissionado Como',
+                name: 'commission_as',
+                type: 'options',
+                options: [
+                    { name: 'Produtor', value: 'PRODUCER' },
+                    { name: 'Coprodutor', value: 'COPRODUCER' },
+                    { name: 'Afiliado', value: 'AFFILIATE' },
+                ],
+                default: 'PRODUCER',
+                description: 'Como o usuário foi comissionado pela venda',
+                routing: {
+                    send: {
+                        type: 'query',
+                        property: 'commission_as',
                     },
                 },
             },

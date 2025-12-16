@@ -21,3 +21,4 @@ __exportStar(require("./MembersDescription"), exports);
 __exportStar(require("./AuthDescription"), exports);
 __exportStar(require("./CouponsDescription"), exports);
 __exportStar(require("./InstallmentsDescription"), exports);
+__exportStar(require("./EventsDescription"), exports);

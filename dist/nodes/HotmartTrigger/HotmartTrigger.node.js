@@ -92,6 +92,33 @@ function parseWebhookData(bodyData) {
         if (data.affiliate) {
             webhookData.affiliate = data.affiliate;
         }
+        if (data.subscriber) {
+            webhookData.subscriber = data.subscriber;
+        }
+        if (data.plans) {
+            webhookData.plans = data.plans;
+        }
+        if (data.offer) {
+            webhookData.offer = data.offer;
+        }
+        if (data.checkout_country) {
+            webhookData.checkout_country = data.checkout_country;
+        }
+        if (data.affiliates) {
+            webhookData.affiliates = data.affiliates;
+        }
+        if (data.commissions) {
+            webhookData.commissions = data.commissions;
+        }
+        if (data.plan) {
+            webhookData.plan = data.plan;
+        }
+        if (data.user) {
+            webhookData.user = data.user;
+        }
+        if (data.module) {
+            webhookData.module = data.module;
+        }
     }
     return webhookData;
 }
@@ -237,6 +264,21 @@ class HotmartTrigger {
                             name: 'Troca de Plano',
                             value: 'SWITCH_PLAN',
                             description: 'Disparar quando um plano de assinatura muda',
+                        },
+                        {
+                            name: 'Troca de Dia de Cobrança',
+                            value: 'UPDATE_SUBSCRIPTION_CHARGE_DATE',
+                            description: 'Disparar quando o dia de cobrança da assinatura é alterado',
+                        },
+                        {
+                            name: 'Primeiro Acesso (Club)',
+                            value: 'CLUB_FIRST_ACCESS',
+                            description: 'Disparar quando um aluno acessa o curso pela primeira vez',
+                        },
+                        {
+                            name: 'Módulo Completo (Club)',
+                            value: 'CLUB_MODULE_COMPLETED',
+                            description: 'Disparar quando um aluno completa um módulo do curso',
                         },
                     ],
                     default: 'all',

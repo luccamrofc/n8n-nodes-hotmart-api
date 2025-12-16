@@ -24,6 +24,8 @@ import {
     couponsFields,
     installmentsOperations,
     installmentsFields,
+    eventsOperations,
+    eventsFields,
 } from './descriptions';
 
 import {
@@ -88,7 +90,7 @@ export class Hotmart implements INodeType {
                 displayOptions: {
                     show: {
                         authMode: ['dynamic'],
-                        resource: ['sales', 'subscriptions', 'products', 'members', 'coupons', 'installments'],
+                        resource: ['sales', 'subscriptions', 'products', 'members', 'coupons', 'installments', 'events'],
                     },
                 },
                 default: '',
@@ -101,7 +103,7 @@ export class Hotmart implements INodeType {
                 displayOptions: {
                     show: {
                         authMode: ['dynamic'],
-                        resource: ['sales', 'subscriptions', 'products', 'members', 'coupons', 'installments'],
+                        resource: ['sales', 'subscriptions', 'products', 'members', 'coupons', 'installments', 'events'],
                     },
                 },
                 options: [
@@ -152,6 +154,10 @@ export class Hotmart implements INodeType {
                         name: 'Venda',
                         value: 'sales',
                     },
+                    {
+                        name: 'Evento',
+                        value: 'events',
+                    },
                 ],
                 default: 'sales',
             },
@@ -170,6 +176,8 @@ export class Hotmart implements INodeType {
             ...couponsFields,
             ...installmentsOperations,
             ...installmentsFields,
+            ...eventsOperations,
+            ...eventsFields,
         ],
     };
 
@@ -460,6 +468,25 @@ export class Hotmart implements INodeType {
                                 type: discountType,
                                 value: discountValue,
                             };
+                        }
+                    }
+                }
+
+                if (resource === 'events') {
+                    const eventId = this.getNodeParameter('eventId', i) as number;
+
+                    if (operation === 'getInfo') {
+                        endpoint = `/events/api/v1/${eventId}/info`;
+                    } else if (operation === 'getParticipants') {
+                        endpoint = `/events/api/v1/${eventId}/participants`;
+
+                        const filters = this.getNodeParameter('filters', i, {}) as IDataObject;
+                        Object.assign(qs, filters);
+
+                        const returnAll = this.getNodeParameter('returnAll', i, false) as boolean;
+                        if (!returnAll) {
+                            const limit = this.getNodeParameter('limit', i, 50) as number;
+                            qs.max_results = limit;
                         }
                     }
                 }

@@ -60,7 +60,7 @@ class Hotmart {
                     displayOptions: {
                         show: {
                             authMode: ['dynamic'],
-                            resource: ['sales', 'subscriptions', 'products', 'members', 'coupons', 'installments'],
+                            resource: ['sales', 'subscriptions', 'products', 'members', 'coupons', 'installments', 'events'],
                         },
                     },
                     default: '',
@@ -73,7 +73,7 @@ class Hotmart {
                     displayOptions: {
                         show: {
                             authMode: ['dynamic'],
-                            resource: ['sales', 'subscriptions', 'products', 'members', 'coupons', 'installments'],
+                            resource: ['sales', 'subscriptions', 'products', 'members', 'coupons', 'installments', 'events'],
                         },
                     },
                     options: [
@@ -123,6 +123,10 @@ class Hotmart {
                             name: 'Venda',
                             value: 'sales',
                         },
+                        {
+                            name: 'Evento',
+                            value: 'events',
+                        },
                     ],
                     default: 'sales',
                 },
@@ -140,6 +144,8 @@ class Hotmart {
                 ...descriptions_1.couponsFields,
                 ...descriptions_1.installmentsOperations,
                 ...descriptions_1.installmentsFields,
+                ...descriptions_1.eventsOperations,
+                ...descriptions_1.eventsFields,
             ],
         };
     }
@@ -392,6 +398,22 @@ class Hotmart {
                                 type: discountType,
                                 value: discountValue,
                             };
+                        }
+                    }
+                }
+                if (resource === 'events') {
+                    const eventId = this.getNodeParameter('eventId', i);
+                    if (operation === 'getInfo') {
+                        endpoint = `/events/api/v1/${eventId}/info`;
+                    }
+                    else if (operation === 'getParticipants') {
+                        endpoint = `/events/api/v1/${eventId}/participants`;
+                        const filters = this.getNodeParameter('filters', i, {});
+                        Object.assign(qs, filters);
+                        const returnAll = this.getNodeParameter('returnAll', i, false);
+                        if (!returnAll) {
+                            const limit = this.getNodeParameter('limit', i, 50);
+                            qs.max_results = limit;
                         }
                     }
                 }

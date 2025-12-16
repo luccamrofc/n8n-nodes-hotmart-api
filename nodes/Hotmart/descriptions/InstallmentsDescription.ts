@@ -112,7 +112,7 @@ export const installmentsFields: INodeProperties[] = [
     {
         displayName: 'Tipo de Desconto',
         name: 'discountType',
-        type: 'options',
+        type: 'hidden',
         displayOptions: {
             show: {
                 resource: ['installments'],
@@ -120,20 +120,8 @@ export const installmentsFields: INodeProperties[] = [
                 offerDiscount: [true],
             },
         },
-        options: [
-            {
-                name: 'Valor Fixo (R$)',
-                value: 'CUSTOM',
-                description: 'Desconto em valor fixo',
-            },
-            {
-                name: 'Percentual (%)',
-                value: 'PERCENTAGE',
-                description: 'Desconto em percentual',
-            },
-        ],
         default: 'CUSTOM',
-        description: 'Tipo de desconto a ser aplicado',
+        description: 'Tipo de desconto (atualmente só CUSTOM é suportado pela API)',
     },
     {
         displayName: 'Valor do Desconto',
