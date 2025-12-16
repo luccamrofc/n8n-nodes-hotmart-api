@@ -156,6 +156,14 @@ Você pode escolher entre:
 - [Documentação da API Hotmart](https://developers.hotmart.com/docs/pt-BR/)
 - [Documentação de Community Nodes n8n](https://docs.n8n.io/integrations/community-nodes/)
 
+## ☕ Apoie o Projeto
+
+Se este node foi útil para você, considere fazer uma doação para apoiar o desenvolvimento, um cafézinho é sempre bem-vindo!
+
+**Chave Pix:** `2858d3fb-4256-4e31-a58c-84d6c3ffde25`
+
+Qualquer valor é bem-vindo e ajuda a manter o projeto ativo. Obrigado pelo apoio! 💜
+
 ## Licença
 
 [MIT](LICENSE.md)
