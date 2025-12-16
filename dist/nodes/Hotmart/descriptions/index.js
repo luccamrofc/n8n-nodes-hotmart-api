@@ -18,3 +18,4 @@ __exportStar(require("./SalesDescription"), exports);
 __exportStar(require("./SubscriptionsDescription"), exports);
 __exportStar(require("./ProductsDescription"), exports);
 __exportStar(require("./MembersDescription"), exports);
+__exportStar(require("./AuthDescription"), exports);

@@ -16,12 +16,13 @@ import {
     productsFields,
     membersOperations,
     membersFields,
+    authOperations,
+    authFields,
 } from './descriptions';
 
 import {
     getAccessToken,
     getBaseUrl,
-    invalidateTokenCache,
 } from './GenericFunctions';
 
 export class Hotmart implements INodeType {
@@ -64,38 +65,13 @@ export class Hotmart implements INodeType {
                     {
                         name: 'Token Dinâmico (Modo SaaS)',
                         value: 'dynamic',
-                        description: 'Passar token de acesso dinamicamente - ideal para aplicações multi-tenant SaaS',
+                        description: 'Passar token de acesso dinamicamente - ideal para aplicações multi-tenant SaaS. Use a operação "Obter Access Token" para obter o token primeiro.',
                     },
                 ],
                 default: 'credentials',
                 description: 'Escolha como autenticar com a API da Hotmart',
             },
-            // SaaS Auth Type Selector (shown only in SaaS mode)
-            {
-                displayName: 'Tipo de Autenticação SaaS',
-                name: 'saasAuthType',
-                type: 'options',
-                displayOptions: {
-                    show: {
-                        authMode: ['dynamic'],
-                    },
-                },
-                options: [
-                    {
-                        name: 'Token Direto (Já Autenticado)',
-                        value: 'directToken',
-                        description: 'Passar um access token já obtido - você gerencia o refresh externamente',
-                    },
-                    {
-                        name: 'Credenciais Dinâmicas (Auto-Refresh)',
-                        value: 'autoRefresh',
-                        description: 'Passar credenciais OAuth e o node gerencia o token automaticamente',
-                    },
-                ],
-                default: 'directToken',
-                description: 'Escolha como fornecer a autenticação no modo SaaS',
-            },
-            // Direct Token Field (shown only when using direct token)
+            // Dynamic Token Fields (shown only in SaaS mode)
             {
                 displayName: 'Token de Acesso',
                 name: 'accessToken',
@@ -107,62 +83,14 @@ export class Hotmart implements INodeType {
                 displayOptions: {
                     show: {
                         authMode: ['dynamic'],
-                        saasAuthType: ['directToken'],
+                    },
+                    hide: {
+                        resource: ['auth'],
                     },
                 },
                 default: '',
-                description: 'O token de acesso OAuth da Hotmart. Pode ser passado dinamicamente de um node anterior (ex: do seu banco de dados ou fluxo OAuth).',
+                description: 'O token de acesso OAuth da Hotmart. Use a operação "Autenticação > Obter Access Token" para obter este token, ou passe de um node anterior.',
             },
-            // Dynamic Credentials Fields (shown only when using auto-refresh)
-            {
-                displayName: 'Client ID',
-                name: 'dynamicClientId',
-                type: 'string',
-                required: true,
-                displayOptions: {
-                    show: {
-                        authMode: ['dynamic'],
-                        saasAuthType: ['autoRefresh'],
-                    },
-                },
-                default: '',
-                description: 'O Client ID das Credenciais de Desenvolvedor da Hotmart',
-            },
-            {
-                displayName: 'Client Secret',
-                name: 'dynamicClientSecret',
-                type: 'string',
-                typeOptions: {
-                    password: true,
-                },
-                required: true,
-                displayOptions: {
-                    show: {
-                        authMode: ['dynamic'],
-                        saasAuthType: ['autoRefresh'],
-                    },
-                },
-                default: '',
-                description: 'O Client Secret das Credenciais de Desenvolvedor da Hotmart',
-            },
-            {
-                displayName: 'Token Basic',
-                name: 'dynamicBasicToken',
-                type: 'string',
-                typeOptions: {
-                    password: true,
-                },
-                required: true,
-                displayOptions: {
-                    show: {
-                        authMode: ['dynamic'],
-                        saasAuthType: ['autoRefresh'],
-                    },
-                },
-                default: '',
-                description: 'O Token Basic das Credenciais de Desenvolvedor da Hotmart (usado para autenticação OAuth)',
-            },
-            // Environment field (shown for all SaaS modes)
             {
                 displayName: 'Ambiente',
                 name: 'environment',
@@ -171,6 +99,9 @@ export class Hotmart implements INodeType {
                 displayOptions: {
                     show: {
                         authMode: ['dynamic'],
+                    },
+                    hide: {
+                        resource: ['auth'],
                     },
                 },
                 options: [
@@ -184,7 +115,7 @@ export class Hotmart implements INodeType {
                     },
                 ],
                 default: 'production',
-                description: 'O ambiente da Hotmart para usar',
+                description: 'O ambiente da Hotmart. IMPORTANTE: Credenciais de Produção só funcionam em Produção e vice-versa.',
             },
             // Resource Selector
             {
@@ -194,8 +125,16 @@ export class Hotmart implements INodeType {
                 noDataExpression: true,
                 options: [
                     {
+                        name: 'Autenticação',
+                        value: 'auth',
+                    },
+                    {
                         name: 'Área de Membros',
                         value: 'members',
+                    },
+                    {
+                        name: 'Assinatura',
+                        value: 'subscriptions',
                     },
                     {
                         name: 'Produto',
@@ -205,14 +144,12 @@ export class Hotmart implements INodeType {
                         name: 'Venda',
                         value: 'sales',
                     },
-                    {
-                        name: 'Assinatura',
-                        value: 'subscriptions',
-                    },
                 ],
                 default: 'sales',
             },
             // Operations and Fields
+            ...authOperations,
+            ...authFields,
             ...salesOperations,
             ...salesFields,
             ...subscriptionsOperations,
@@ -232,13 +169,51 @@ export class Hotmart implements INodeType {
         const resource = this.getNodeParameter('resource', 0) as string;
         const operation = this.getNodeParameter('operation', 0) as string;
 
+        // Handle Auth resource separately (doesn't require prior authentication)
+        if (resource === 'auth') {
+            if (operation === 'getAccessToken') {
+                for (let i = 0; i < items.length; i++) {
+                    try {
+                        const clientId = this.getNodeParameter('authClientId', i) as string;
+                        const clientSecret = this.getNodeParameter('authClientSecret', i) as string;
+                        const basicToken = this.getNodeParameter('authBasicToken', i) as string;
+                        const environment = this.getNodeParameter('authEnvironment', i) as 'production' | 'sandbox';
+
+                        const accessToken = await getAccessToken({
+                            environment,
+                            clientId,
+                            clientSecret,
+                            basicToken,
+                        });
+
+                        // Calculate expiration time (Hotmart tokens typically expire in 7200 seconds / 2 hours)
+                        const expiresIn = 7200;
+                        const expiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
+
+                        returnData.push({
+                            json: {
+                                access_token: accessToken,
+                                token_type: 'bearer',
+                                expires_in: expiresIn,
+                                expires_at: expiresAt,
+                                environment,
+                            },
+                        });
+                    } catch (error) {
+                        if (this.continueOnFail()) {
+                            returnData.push({ json: { error: (error as Error).message } });
+                            continue;
+                        }
+                        throw error;
+                    }
+                }
+            }
+            return [returnData];
+        }
+
+        // For other resources, get authentication
         let accessToken: string;
         let baseUrl: string;
-
-        // Get authentication based on mode
-        const saasAuthType = authMode === 'dynamic'
-            ? this.getNodeParameter('saasAuthType', 0, 'directToken') as string
-            : '';
 
         if (authMode === 'credentials') {
             // Traditional n8n credentials mode
@@ -250,233 +225,171 @@ export class Hotmart implements INodeType {
                 basicToken: credentials.basicToken as string,
             });
             baseUrl = getBaseUrl(credentials.environment as string);
-        } else if (saasAuthType === 'autoRefresh') {
-            // Dynamic/SaaS mode with auto-refresh - use dynamic credentials
-            const dynamicClientId = this.getNodeParameter('dynamicClientId', 0) as string;
-            const dynamicClientSecret = this.getNodeParameter('dynamicClientSecret', 0) as string;
-            const dynamicBasicToken = this.getNodeParameter('dynamicBasicToken', 0) as string;
-            const environment = this.getNodeParameter('environment', 0) as 'production' | 'sandbox';
-
-            accessToken = await getAccessToken({
-                environment,
-                clientId: dynamicClientId,
-                clientSecret: dynamicClientSecret,
-                basicToken: dynamicBasicToken,
-            });
-            baseUrl = getBaseUrl(environment);
         } else {
-            // Dynamic/SaaS mode with direct token
+            // Dynamic/SaaS mode - token passed directly
             accessToken = this.getNodeParameter('accessToken', 0) as string;
             const environment = this.getNodeParameter('environment', 0) as string;
             baseUrl = getBaseUrl(environment);
         }
 
         for (let i = 0; i < items.length; i++) {
-            let retryCount = 0;
-            const maxRetries = 1; // Permite apenas 1 retry para evitar loop infinito
+            try {
+                // In SaaS mode, allow different tokens per item
+                let itemAccessToken = accessToken;
+                let itemBaseUrl = baseUrl;
 
-            while (retryCount <= maxRetries) {
-                try {
-                    // In SaaS mode, allow different tokens/credentials per item
-                    let itemAccessToken = accessToken;
-                    let itemBaseUrl = baseUrl;
+                if (authMode === 'dynamic') {
+                    const itemToken = this.getNodeParameter('accessToken', i, '') as string;
+                    if (itemToken) {
+                        itemAccessToken = itemToken;
+                    }
+                    const itemEnv = this.getNodeParameter('environment', i, 'production') as string;
+                    itemBaseUrl = getBaseUrl(itemEnv);
+                }
 
-                    if (authMode === 'dynamic') {
-                        const itemEnv = this.getNodeParameter('environment', i, 'production') as 'production' | 'sandbox';
-                        itemBaseUrl = getBaseUrl(itemEnv);
+                let endpoint = '';
+                let method: IHttpRequestMethods = 'GET';
+                const qs: IDataObject = {};
+                let body: IDataObject = {};
 
-                        if (saasAuthType === 'autoRefresh') {
-                            // Auto-refresh mode: get token using dynamic credentials for this item
-                            const itemClientId = this.getNodeParameter('dynamicClientId', i, '') as string;
-                            const itemClientSecret = this.getNodeParameter('dynamicClientSecret', i, '') as string;
-                            const itemBasicToken = this.getNodeParameter('dynamicBasicToken', i, '') as string;
-
-                            if (itemClientId && itemClientSecret && itemBasicToken) {
-                                // Se é retry, invalida o cache primeiro
-                                if (retryCount > 0) {
-                                    invalidateTokenCache({
-                                        environment: itemEnv,
-                                        clientId: itemClientId,
-                                        clientSecret: itemClientSecret,
-                                        basicToken: itemBasicToken,
-                                    });
-                                }
-
-                                itemAccessToken = await getAccessToken({
-                                    environment: itemEnv,
-                                    clientId: itemClientId,
-                                    clientSecret: itemClientSecret,
-                                    basicToken: itemBasicToken,
-                                });
-                            }
-                        } else {
-                            // Direct token mode: check if this item has its own token
-                            const itemToken = this.getNodeParameter('accessToken', i, '') as string;
-                            if (itemToken) {
-                                itemAccessToken = itemToken;
-                            }
-                        }
+                // Build request based on resource and operation
+                if (resource === 'sales') {
+                    if (operation === 'getAll') {
+                        endpoint = '/payments/api/v1/sales/history';
+                    } else if (operation === 'getSummary') {
+                        endpoint = '/payments/api/v1/sales/summary';
+                    } else if (operation === 'getCommissions') {
+                        endpoint = '/payments/api/v1/sales/commissions';
+                    } else if (operation === 'getPriceDetails') {
+                        endpoint = '/payments/api/v1/sales/price/details';
                     }
 
-                    let endpoint = '';
-                    let method: IHttpRequestMethods = 'GET';
-                    const qs: IDataObject = {};
-                    let body: IDataObject = {};
+                    // Apply filters
+                    const filters = this.getNodeParameter('filters', i, {}) as IDataObject;
+                    Object.assign(qs, filters);
 
-                    // Build request based on resource and operation
-                    if (resource === 'sales') {
-                        if (operation === 'getAll') {
-                            endpoint = '/payments/api/v1/sales/history';
-                        } else if (operation === 'getSummary') {
-                            endpoint = '/payments/api/v1/sales/summary';
-                        } else if (operation === 'getCommissions') {
-                            endpoint = '/payments/api/v1/sales/commissions';
-                        } else if (operation === 'getPriceDetails') {
-                            endpoint = '/payments/api/v1/sales/price/details';
-                        }
+                    // Apply limit
+                    const returnAll = this.getNodeParameter('returnAll', i, false) as boolean;
+                    if (!returnAll) {
+                        const limit = this.getNodeParameter('limit', i, 50) as number;
+                        qs.max_results = limit;
+                    }
+                }
 
-                        // Apply filters
+                if (resource === 'subscriptions') {
+                    if (operation === 'getAll') {
+                        endpoint = '/payments/api/v1/subscriptions';
+                    } else if (operation === 'getSummary') {
+                        endpoint = '/payments/api/v1/subscriptions/summary';
+                    } else if (operation === 'getPurchases') {
+                        endpoint = '/payments/api/v1/subscriptions/purchases';
+                    } else if (operation === 'cancel') {
+                        const subscriberCode = this.getNodeParameter('subscriberCode', i) as string;
+                        endpoint = `/payments/api/v1/subscriptions/${subscriberCode}/cancel`;
+                        method = 'POST';
+                        const sendMail = this.getNodeParameter('sendMail', i, true) as boolean;
+                        qs.send_mail = sendMail;
+                    } else if (operation === 'reactivate') {
+                        const subscriberCode = this.getNodeParameter('subscriberCode', i) as string;
+                        endpoint = `/payments/api/v1/subscriptions/${subscriberCode}/reactivate`;
+                        method = 'POST';
+                    } else if (operation === 'changeBillingDate') {
+                        const subscriberCode = this.getNodeParameter('subscriberCode', i) as string;
+                        endpoint = `/payments/api/v1/subscriptions/${subscriberCode}/charge-date`;
+                        method = 'PATCH';
+                        const dueDay = this.getNodeParameter('dueDay', i) as number;
+                        body = { due_day: dueDay };
+                    }
+
+                    // Apply filters for list operations
+                    if (['getAll', 'getSummary', 'getPurchases'].includes(operation)) {
                         const filters = this.getNodeParameter('filters', i, {}) as IDataObject;
                         Object.assign(qs, filters);
 
-                        // Apply limit
+                        const returnAll = this.getNodeParameter('returnAll', i, false) as boolean;
+                        if (!returnAll && operation !== 'getSummary') {
+                            const limit = this.getNodeParameter('limit', i, 50) as number;
+                            qs.max_results = limit;
+                        }
+                    }
+                }
+
+                if (resource === 'products') {
+                    if (operation === 'getAll') {
+                        endpoint = '/products/api/v1/products';
+
+                        const filters = this.getNodeParameter('filters', i, {}) as IDataObject;
+                        Object.assign(qs, filters);
+
                         const returnAll = this.getNodeParameter('returnAll', i, false) as boolean;
                         if (!returnAll) {
                             const limit = this.getNodeParameter('limit', i, 50) as number;
                             qs.max_results = limit;
                         }
                     }
-
-                    if (resource === 'subscriptions') {
-                        if (operation === 'getAll') {
-                            endpoint = '/payments/api/v1/subscriptions';
-                        } else if (operation === 'getSummary') {
-                            endpoint = '/payments/api/v1/subscriptions/summary';
-                        } else if (operation === 'getPurchases') {
-                            endpoint = '/payments/api/v1/subscriptions/purchases';
-                        } else if (operation === 'cancel') {
-                            const subscriberCode = this.getNodeParameter('subscriberCode', i) as string;
-                            endpoint = `/payments/api/v1/subscriptions/${subscriberCode}/cancel`;
-                            method = 'POST';
-                            const sendMail = this.getNodeParameter('sendMail', i, true) as boolean;
-                            qs.send_mail = sendMail;
-                        } else if (operation === 'reactivate') {
-                            const subscriberCode = this.getNodeParameter('subscriberCode', i) as string;
-                            endpoint = `/payments/api/v1/subscriptions/${subscriberCode}/reactivate`;
-                            method = 'POST';
-                        } else if (operation === 'changeBillingDate') {
-                            const subscriberCode = this.getNodeParameter('subscriberCode', i) as string;
-                            endpoint = `/payments/api/v1/subscriptions/${subscriberCode}/charge-date`;
-                            method = 'PATCH';
-                            const dueDay = this.getNodeParameter('dueDay', i) as number;
-                            body = { due_day: dueDay };
-                        }
-
-                        // Apply filters for list operations
-                        if (['getAll', 'getSummary', 'getPurchases'].includes(operation)) {
-                            const filters = this.getNodeParameter('filters', i, {}) as IDataObject;
-                            Object.assign(qs, filters);
-
-                            const returnAll = this.getNodeParameter('returnAll', i, false) as boolean;
-                            if (!returnAll && operation !== 'getSummary') {
-                                const limit = this.getNodeParameter('limit', i, 50) as number;
-                                qs.max_results = limit;
-                            }
-                        }
-                    }
-
-                    if (resource === 'products') {
-                        if (operation === 'getAll') {
-                            endpoint = '/products/api/v1/products';
-
-                            const filters = this.getNodeParameter('filters', i, {}) as IDataObject;
-                            Object.assign(qs, filters);
-
-                            const returnAll = this.getNodeParameter('returnAll', i, false) as boolean;
-                            if (!returnAll) {
-                                const limit = this.getNodeParameter('limit', i, 50) as number;
-                                qs.max_results = limit;
-                            }
-                        }
-                    }
-
-                    if (resource === 'members') {
-                        const subdomain = this.getNodeParameter('subdomain', i) as string;
-
-                        if (operation === 'getStudents') {
-                            endpoint = `/club/api/v2/${subdomain}/users`;
-                        } else if (operation === 'getModules') {
-                            endpoint = `/club/api/v2/${subdomain}/modules`;
-                        } else if (operation === 'getPages') {
-                            const moduleId = this.getNodeParameter('moduleId', i) as string;
-                            endpoint = `/club/api/v2/${subdomain}/modules/${moduleId}/pages`;
-                        } else if (operation === 'getStudentProgress') {
-                            const userId = this.getNodeParameter('userId', i) as string;
-                            endpoint = `/club/api/v2/${subdomain}/users/${userId}/progress`;
-                        }
-
-                        // Apply filters for list operations
-                        if (['getStudents', 'getModules', 'getPages'].includes(operation)) {
-                            if (operation === 'getStudents') {
-                                const filters = this.getNodeParameter('filters', i, {}) as IDataObject;
-                                Object.assign(qs, filters);
-                            }
-
-                            const returnAll = this.getNodeParameter('returnAll', i, false) as boolean;
-                            if (!returnAll) {
-                                const limit = this.getNodeParameter('limit', i, 50) as number;
-                                qs.max_results = limit;
-                            }
-                        }
-                    }
-
-                    // Make the API request
-                    const requestOptions = {
-                        method,
-                        url: `${itemBaseUrl}${endpoint}`,
-                        headers: {
-                            Authorization: `Bearer ${itemAccessToken}`,
-                            'Content-Type': 'application/json',
-                        },
-                        qs,
-                        body: Object.keys(body).length > 0 ? body : undefined,
-                        json: true,
-                    };
-
-                    const response = await this.helpers.httpRequest(requestOptions);
-
-                    // Handle response
-                    if (response.items && Array.isArray(response.items)) {
-                        // If response has items array, return each item
-                        for (const item of response.items) {
-                            returnData.push({ json: item as IDataObject });
-                        }
-                    } else {
-                        // Return the whole response
-                        returnData.push({ json: response as IDataObject });
-                    }
-
-                    // Sucesso - sai do loop de retry
-                    break;
-
-                } catch (error) {
-                    const err = error as { response?: { status?: number }; statusCode?: number; message?: string };
-                    const statusCode = err.response?.status || err.statusCode;
-
-                    // Se erro 401 no modo autoRefresh e ainda não tentamos retry
-                    if (statusCode === 401 && authMode === 'dynamic' && saasAuthType === 'autoRefresh' && retryCount < maxRetries) {
-                        retryCount++;
-                        console.log(`[Hotmart Node] Token expirado (401), tentando novamente com novo token... (tentativa ${retryCount})`);
-                        continue; // Vai para a próxima iteração do while
-                    }
-
-                    // Erro final - não faz mais retry
-                    if (this.continueOnFail()) {
-                        returnData.push({ json: { error: (error as Error).message } });
-                        break; // Sai do loop de retry
-                    }
-                    throw error;
                 }
+
+                if (resource === 'members') {
+                    const subdomain = this.getNodeParameter('subdomain', i) as string;
+
+                    if (operation === 'getStudents') {
+                        endpoint = `/club/api/v2/${subdomain}/users`;
+                    } else if (operation === 'getModules') {
+                        endpoint = `/club/api/v2/${subdomain}/modules`;
+                    } else if (operation === 'getPages') {
+                        const moduleId = this.getNodeParameter('moduleId', i) as string;
+                        endpoint = `/club/api/v2/${subdomain}/modules/${moduleId}/pages`;
+                    } else if (operation === 'getStudentProgress') {
+                        const userId = this.getNodeParameter('userId', i) as string;
+                        endpoint = `/club/api/v2/${subdomain}/users/${userId}/progress`;
+                    }
+
+                    // Apply filters for list operations
+                    if (['getStudents', 'getModules', 'getPages'].includes(operation)) {
+                        if (operation === 'getStudents') {
+                            const filters = this.getNodeParameter('filters', i, {}) as IDataObject;
+                            Object.assign(qs, filters);
+                        }
+
+                        const returnAll = this.getNodeParameter('returnAll', i, false) as boolean;
+                        if (!returnAll) {
+                            const limit = this.getNodeParameter('limit', i, 50) as number;
+                            qs.max_results = limit;
+                        }
+                    }
+                }
+
+                // Make the API request
+                const requestOptions = {
+                    method,
+                    url: `${itemBaseUrl}${endpoint}`,
+                    headers: {
+                        Authorization: `Bearer ${itemAccessToken}`,
+                        'Content-Type': 'application/json',
+                    },
+                    qs,
+                    body: Object.keys(body).length > 0 ? body : undefined,
+                    json: true,
+                };
+
+                const response = await this.helpers.httpRequest(requestOptions);
+
+                // Handle response
+                if (response.items && Array.isArray(response.items)) {
+                    // If response has items array, return each item
+                    for (const item of response.items) {
+                        returnData.push({ json: item as IDataObject });
+                    }
+                } else {
+                    // Return the whole response
+                    returnData.push({ json: response as IDataObject });
+                }
+            } catch (error) {
+                if (this.continueOnFail()) {
+                    returnData.push({ json: { error: (error as Error).message } });
+                    continue;
+                }
+                throw error;
             }
         }
 
