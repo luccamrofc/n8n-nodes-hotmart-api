@@ -7,7 +7,7 @@ import type {
 } from 'n8n-workflow';
 import { NodeApiError } from 'n8n-workflow';
 
-interface IHotmartCredentials {
+export interface IHotmartCredentials {
     environment: 'production' | 'sandbox';
     clientId: string;
     clientSecret: string;
@@ -18,13 +18,24 @@ interface ITokenResponse {
     access_token: string;
     token_type: string;
     expires_in: number;
+    scope?: string;
+    jti?: string;
 }
 
-// Cache for access tokens
-const tokenCache: Map<string, { token: string; expiry: number }> = new Map();
+interface ITokenCache {
+    token: string;
+    expiry: number;
+    tokenType: string;
+}
+
+// Buffer de expiração: 5 minutos antes do token expirar
+const TOKEN_EXPIRY_BUFFER_MS = 5 * 60 * 1000;
+
+// Cache para access tokens
+const tokenCache: Map<string, ITokenCache> = new Map();
 
 /**
- * Get the base URL based on the environment
+ * Obtém a URL base baseada no ambiente
  */
 export function getBaseUrl(environment: string): string {
     return environment === 'sandbox'
@@ -33,16 +44,32 @@ export function getBaseUrl(environment: string): string {
 }
 
 /**
- * Get OAuth access token using client credentials flow
+ * Gera a chave de cache única para as credenciais
+ */
+function getCacheKey(credentials: IHotmartCredentials): string {
+    return `${credentials.clientId}:${credentials.environment}`;
+}
+
+/**
+ * Invalida o cache de token para as credenciais especificadas
+ */
+export function invalidateTokenCache(credentials: IHotmartCredentials): void {
+    const cacheKey = getCacheKey(credentials);
+    tokenCache.delete(cacheKey);
+}
+
+/**
+ * Obtém access token OAuth usando client credentials flow
+ * Implementa cache com buffer de expiração de 5 minutos
  */
 export async function getAccessToken(
     credentials: IHotmartCredentials,
 ): Promise<string> {
-    const cacheKey = `${credentials.clientId}:${credentials.environment}`;
+    const cacheKey = getCacheKey(credentials);
     const cached = tokenCache.get(cacheKey);
 
-    // Return cached token if still valid (with 60 second buffer)
-    if (cached && cached.expiry > Date.now() + 60000) {
+    // Retorna token cacheado se ainda válido (com buffer de 5 minutos)
+    if (cached && cached.expiry > Date.now() + TOKEN_EXPIRY_BUFFER_MS) {
         return cached.token;
     }
 
@@ -63,25 +90,33 @@ export async function getAccessToken(
         });
 
         if (!response.ok) {
-            throw new Error(`Authentication failed: ${response.statusText}`);
+            const errorText = await response.text();
+            throw new Error(`Falha na autenticação (${response.status}): ${errorText || response.statusText}`);
         }
 
         const data = (await response.json()) as ITokenResponse;
 
-        // Cache the token
+        // Valida o tipo de token
+        if (data.token_type?.toLowerCase() !== 'bearer') {
+            throw new Error(`Tipo de token inesperado: ${data.token_type}`);
+        }
+
+        // Cacheia o token
         tokenCache.set(cacheKey, {
             token: data.access_token,
             expiry: Date.now() + (data.expires_in * 1000),
+            tokenType: data.token_type,
         });
 
         return data.access_token;
     } catch (error) {
-        throw new Error(`Failed to get Hotmart access token: ${(error as Error).message}`);
+        throw new Error(`Falha ao obter access token da Hotmart: ${(error as Error).message}`);
     }
 }
 
 /**
- * Make an authenticated API request to Hotmart
+ * Faz uma requisição autenticada para a API da Hotmart
+ * Implementa retry automático em caso de erro 401
  */
 export async function hotmartApiRequest(
     this: IExecuteFunctions,
@@ -89,9 +124,9 @@ export async function hotmartApiRequest(
     endpoint: string,
     body: IDataObject = {},
     qs: IDataObject = {},
+    retry: boolean = true,
 ): Promise<IDataObject | IDataObject[]> {
     const credentials = await this.getCredentials('hotmartApi') as unknown as IHotmartCredentials;
-
     const accessToken = await getAccessToken(credentials);
     const baseUrl = getBaseUrl(credentials.environment);
 
@@ -114,12 +149,23 @@ export async function hotmartApiRequest(
         const response = await this.helpers.httpRequest(options);
         return response as IDataObject | IDataObject[];
     } catch (error) {
-        throw new NodeApiError(this.getNode(), { message: (error as Error).message } as JsonObject);
+        const err = error as { statusCode?: number; message?: string };
+
+        // Se erro 401 e retry habilitado, invalida cache e tenta novamente
+        if (err.statusCode === 401 && retry) {
+            invalidateTokenCache(credentials);
+            return hotmartApiRequest.call(this, method, endpoint, body, qs, false);
+        }
+
+        throw new NodeApiError(this.getNode(), {
+            message: err.message || 'Erro desconhecido na requisição'
+        } as JsonObject);
     }
 }
 
 /**
- * Make an authenticated API request with pagination support
+ * Faz uma requisição autenticada com suporte a paginação
+ * Obtém todos os itens de endpoints paginados
  */
 export async function hotmartApiRequestAllItems(
     this: IExecuteFunctions,
@@ -145,4 +191,19 @@ export async function hotmartApiRequestAllItems(
     } while (pageToken);
 
     return returnData;
+}
+
+/**
+ * Testa as credenciais da Hotmart obtendo um token
+ * Retorna true se bem-sucedido, lança erro se falhar
+ */
+export async function testHotmartCredentials(
+    credentials: IHotmartCredentials,
+): Promise<boolean> {
+    try {
+        await getAccessToken(credentials);
+        return true;
+    } catch (error) {
+        throw new Error(`Credenciais inválidas: ${(error as Error).message}`);
+    }
 }

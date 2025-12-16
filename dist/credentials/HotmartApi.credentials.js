@@ -22,7 +22,7 @@ class HotmartApi {
                     },
                 ],
                 default: 'production',
-                description: 'Escolha entre ambiente de Produção ou Sandbox',
+                description: 'Escolha entre ambiente de Produção ou Sandbox. Credenciais de Sandbox só funcionam no ambiente Sandbox e vice-versa.',
             },
             {
                 displayName: 'Client ID',
@@ -30,7 +30,7 @@ class HotmartApi {
                 type: 'string',
                 default: '',
                 required: true,
-                description: 'O Client ID das Credenciais de Desenvolvedor da Hotmart',
+                description: 'O Client ID das Credenciais de Desenvolvedor da Hotmart. Encontrado em Ferramentas > Credenciais Developers.',
             },
             {
                 displayName: 'Client Secret',
@@ -55,24 +55,6 @@ class HotmartApi {
                 description: 'O Token Basic das Credenciais de Desenvolvedor da Hotmart (usado para autenticação OAuth)',
             },
         ];
-        this.authenticate = {
-            type: 'generic',
-            properties: {
-                headers: {
-                    Authorization: '=Bearer {{$credentials.accessToken}}',
-                },
-            },
-        };
-        this.test = {
-            request: {
-                baseURL: '={{$credentials.environment === "sandbox" ? "https://sandbox.hotmart.com" : "https://api-hot-connect.hotmart.com"}}',
-                url: '/products/api/v1/products',
-                method: 'GET',
-                qs: {
-                    max_results: 1,
-                },
-            },
-        };
     }
 }
 exports.HotmartApi = HotmartApi;

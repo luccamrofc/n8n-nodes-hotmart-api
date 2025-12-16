@@ -1,6 +1,4 @@
 import type {
-    IAuthenticateGeneric,
-    ICredentialTestRequest,
     ICredentialType,
     INodeProperties,
 } from 'n8n-workflow';
@@ -26,7 +24,7 @@ export class HotmartApi implements ICredentialType {
                 },
             ],
             default: 'production',
-            description: 'Escolha entre ambiente de Produção ou Sandbox',
+            description: 'Escolha entre ambiente de Produção ou Sandbox. Credenciais de Sandbox só funcionam no ambiente Sandbox e vice-versa.',
         },
         {
             displayName: 'Client ID',
@@ -34,7 +32,7 @@ export class HotmartApi implements ICredentialType {
             type: 'string',
             default: '',
             required: true,
-            description: 'O Client ID das Credenciais de Desenvolvedor da Hotmart',
+            description: 'O Client ID das Credenciais de Desenvolvedor da Hotmart. Encontrado em Ferramentas > Credenciais Developers.',
         },
         {
             displayName: 'Client Secret',
@@ -60,25 +58,7 @@ export class HotmartApi implements ICredentialType {
         },
     ];
 
-    // OAuth 2.0 Client Credentials flow
-    // The token will be obtained dynamically in the node using pre-request logic
-    authenticate: IAuthenticateGeneric = {
-        type: 'generic',
-        properties: {
-            headers: {
-                Authorization: '=Bearer {{$credentials.accessToken}}',
-            },
-        },
-    };
-
-    test: ICredentialTestRequest = {
-        request: {
-            baseURL: '={{$credentials.environment === "sandbox" ? "https://sandbox.hotmart.com" : "https://api-hot-connect.hotmart.com"}}',
-            url: '/products/api/v1/products',
-            method: 'GET',
-            qs: {
-                max_results: 1,
-            },
-        },
-    };
+    // Nota: O teste de credenciais é feito programaticamente no node
+    // usando a função testHotmartCredentials() que obtém um access token
+    // Não usamos ICredentialTestRequest porque precisamos do fluxo OAuth
 }

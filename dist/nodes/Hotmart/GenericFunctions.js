@@ -1,20 +1,31 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getBaseUrl = getBaseUrl;
+exports.invalidateTokenCache = invalidateTokenCache;
 exports.getAccessToken = getAccessToken;
 exports.hotmartApiRequest = hotmartApiRequest;
 exports.hotmartApiRequestAllItems = hotmartApiRequestAllItems;
+exports.testHotmartCredentials = testHotmartCredentials;
 const n8n_workflow_1 = require("n8n-workflow");
+const TOKEN_EXPIRY_BUFFER_MS = 5 * 60 * 1000;
 const tokenCache = new Map();
 function getBaseUrl(environment) {
     return environment === 'sandbox'
         ? 'https://sandbox.hotmart.com'
         : 'https://api-hot-connect.hotmart.com';
 }
+function getCacheKey(credentials) {
+    return `${credentials.clientId}:${credentials.environment}`;
+}
+function invalidateTokenCache(credentials) {
+    const cacheKey = getCacheKey(credentials);
+    tokenCache.delete(cacheKey);
+}
 async function getAccessToken(credentials) {
-    const cacheKey = `${credentials.clientId}:${credentials.environment}`;
+    var _a;
+    const cacheKey = getCacheKey(credentials);
     const cached = tokenCache.get(cacheKey);
-    if (cached && cached.expiry > Date.now() + 60000) {
+    if (cached && cached.expiry > Date.now() + TOKEN_EXPIRY_BUFFER_MS) {
         return cached.token;
     }
     const authUrl = 'https://api-sec-vlc.hotmart.com/security/oauth/token';
@@ -32,20 +43,25 @@ async function getAccessToken(credentials) {
             }),
         });
         if (!response.ok) {
-            throw new Error(`Authentication failed: ${response.statusText}`);
+            const errorText = await response.text();
+            throw new Error(`Falha na autenticação (${response.status}): ${errorText || response.statusText}`);
         }
         const data = (await response.json());
+        if (((_a = data.token_type) === null || _a === void 0 ? void 0 : _a.toLowerCase()) !== 'bearer') {
+            throw new Error(`Tipo de token inesperado: ${data.token_type}`);
+        }
         tokenCache.set(cacheKey, {
             token: data.access_token,
             expiry: Date.now() + (data.expires_in * 1000),
+            tokenType: data.token_type,
         });
         return data.access_token;
     }
     catch (error) {
-        throw new Error(`Failed to get Hotmart access token: ${error.message}`);
+        throw new Error(`Falha ao obter access token da Hotmart: ${error.message}`);
     }
 }
-async function hotmartApiRequest(method, endpoint, body = {}, qs = {}) {
+async function hotmartApiRequest(method, endpoint, body = {}, qs = {}, retry = true) {
     const credentials = await this.getCredentials('hotmartApi');
     const accessToken = await getAccessToken(credentials);
     const baseUrl = getBaseUrl(credentials.environment);
@@ -67,7 +83,14 @@ async function hotmartApiRequest(method, endpoint, body = {}, qs = {}) {
         return response;
     }
     catch (error) {
-        throw new n8n_workflow_1.NodeApiError(this.getNode(), { message: error.message });
+        const err = error;
+        if (err.statusCode === 401 && retry) {
+            invalidateTokenCache(credentials);
+            return hotmartApiRequest.call(this, method, endpoint, body, qs, false);
+        }
+        throw new n8n_workflow_1.NodeApiError(this.getNode(), {
+            message: err.message || 'Erro desconhecido na requisição'
+        });
     }
 }
 async function hotmartApiRequestAllItems(method, endpoint, body = {}, qs = {}) {
@@ -83,4 +106,13 @@ async function hotmartApiRequestAllItems(method, endpoint, body = {}, qs = {}) {
         pageToken = response.page_token;
     } while (pageToken);
     return returnData;
+}
+async function testHotmartCredentials(credentials) {
+    try {
+        await getAccessToken(credentials);
+        return true;
+    }
+    catch (error) {
+        throw new Error(`Credenciais inválidas: ${error.message}`);
+    }
 }
