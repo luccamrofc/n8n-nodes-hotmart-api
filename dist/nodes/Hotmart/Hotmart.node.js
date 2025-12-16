@@ -56,13 +56,10 @@ class Hotmart {
                     typeOptions: {
                         password: true,
                     },
-                    required: true,
                     displayOptions: {
                         show: {
                             authMode: ['dynamic'],
-                        },
-                        hide: {
-                            resource: ['auth'],
+                            resource: ['sales', 'subscriptions', 'products', 'members'],
                         },
                     },
                     default: '',
@@ -72,13 +69,10 @@ class Hotmart {
                     displayName: 'Ambiente',
                     name: 'environment',
                     type: 'options',
-                    required: true,
                     displayOptions: {
                         show: {
                             authMode: ['dynamic'],
-                        },
-                        hide: {
-                            resource: ['auth'],
+                            resource: ['sales', 'subscriptions', 'products', 'members'],
                         },
                     },
                     options: [

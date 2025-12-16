@@ -71,7 +71,7 @@ export class Hotmart implements INodeType {
                 default: 'credentials',
                 description: 'Escolha como autenticar com a API da Hotmart',
             },
-            // Dynamic Token Fields (shown only in SaaS mode)
+            // Dynamic Token Fields (shown only in SaaS mode and NOT for auth resource)
             {
                 displayName: 'Token de Acesso',
                 name: 'accessToken',
@@ -79,13 +79,10 @@ export class Hotmart implements INodeType {
                 typeOptions: {
                     password: true,
                 },
-                required: true,
                 displayOptions: {
                     show: {
                         authMode: ['dynamic'],
-                    },
-                    hide: {
-                        resource: ['auth'],
+                        resource: ['sales', 'subscriptions', 'products', 'members'],
                     },
                 },
                 default: '',
@@ -95,13 +92,10 @@ export class Hotmart implements INodeType {
                 displayName: 'Ambiente',
                 name: 'environment',
                 type: 'options',
-                required: true,
                 displayOptions: {
                     show: {
                         authMode: ['dynamic'],
-                    },
-                    hide: {
-                        resource: ['auth'],
+                        resource: ['sales', 'subscriptions', 'products', 'members'],
                     },
                 },
                 options: [
