@@ -188,16 +188,10 @@ class Hotmart {
             baseUrl = (0, GenericFunctions_1.getBaseUrl)(credentials.environment);
         }
         else {
-            let tokenInput = this.getNodeParameter('accessToken', 0, '');
+            accessToken = this.getNodeParameter('accessToken', 0, '');
             const environment = this.getNodeParameter('environment', 0, 'production');
-            if (!tokenInput) {
+            if (!accessToken) {
                 throw new Error('Token de Acesso é obrigatório no modo SaaS. Use a operação "Autenticação > Obter Access Token" primeiro.');
-            }
-            try {
-                accessToken = decodeURIComponent(tokenInput);
-            }
-            catch {
-                accessToken = tokenInput;
             }
             baseUrl = (0, GenericFunctions_1.getBaseUrl)(environment);
         }
@@ -208,12 +202,7 @@ class Hotmart {
                 if (authMode === 'dynamic') {
                     const itemToken = this.getNodeParameter('accessToken', i, '');
                     if (itemToken) {
-                        try {
-                            itemAccessToken = decodeURIComponent(itemToken);
-                        }
-                        catch {
-                            itemAccessToken = itemToken;
-                        }
+                        itemAccessToken = itemToken;
                     }
                     const itemEnv = this.getNodeParameter('environment', i, 'production');
                     itemBaseUrl = (0, GenericFunctions_1.getBaseUrl)(itemEnv);
