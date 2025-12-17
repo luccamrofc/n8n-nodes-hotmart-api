@@ -1,5 +1,7 @@
 # n8n-nodes-hotmart-api
 
+![Status](assets/badges.png)
+
 Este é o **community node definitivo** para integração com a [Hotmart](https://www.hotmart.com) no n8n. 
 
 Projetado para atender tanto **infoprodutores individuais** quanto **agências e plataformas SaaS** que precisam escalar automações para múltiplas contas.
