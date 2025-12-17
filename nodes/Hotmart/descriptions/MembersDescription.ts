@@ -64,7 +64,7 @@ export const membersOperations: INodeProperties[] = [
                 routing: {
                     request: {
                         method: 'GET',
-                        url: '=/club/api/v2/modules/{{$parameter.moduleId}}/pages',
+                        url: '=/club/api/v2/{{$parameter.subdomain}}/modules/{{$parameter.moduleId}}/pages',
                     },
                 },
             },
@@ -97,7 +97,7 @@ export const membersFields: INodeProperties[] = [
         displayOptions: {
             show: {
                 resource: ['members'],
-                operation: ['getStudents', 'getModules', 'getStudentProgress'],
+                operation: ['getStudents', 'getModules', 'getPages', 'getStudentProgress'],
             },
         },
         default: '',

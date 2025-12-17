@@ -90,6 +90,18 @@ class Hotmart {
                     description: 'O ambiente da Hotmart. IMPORTANTE: Credenciais de Produção só funcionam em Produção e vice-versa.',
                 },
                 {
+                    displayName: 'Incluir Metadados de Paginação',
+                    name: 'includePaginationMetadata',
+                    type: 'boolean',
+                    default: false,
+                    description: 'Retorna metadados úteis para AI Agents junto com os resultados (items_returned, has_more, page_token)',
+                    displayOptions: {
+                        show: {
+                            resource: ['sales', 'subscriptions', 'products', 'members', 'events', 'coupons'],
+                        },
+                    },
+                },
+                {
                     displayName: 'Recurso',
                     name: 'resource',
                     type: 'options',
@@ -429,9 +441,24 @@ class Hotmart {
                     json: true,
                 };
                 const response = await this.helpers.httpRequest(requestOptions);
+                const includePaginationMetadata = this.getNodeParameter('includePaginationMetadata', i, false);
                 if (response.items && Array.isArray(response.items)) {
-                    for (const item of response.items) {
-                        returnData.push({ json: item });
+                    if (includePaginationMetadata) {
+                        returnData.push({
+                            json: {
+                                _metadata: {
+                                    items_returned: response.items.length,
+                                    has_more: !!response.page_token,
+                                    page_token: response.page_token || null,
+                                },
+                                items: response.items,
+                            },
+                        });
+                    }
+                    else {
+                        for (const item of response.items) {
+                            returnData.push({ json: item });
+                        }
                     }
                 }
                 else {

@@ -65,7 +65,7 @@ exports.membersOperations = [
                 routing: {
                     request: {
                         method: 'GET',
-                        url: '=/club/api/v2/modules/{{$parameter.moduleId}}/pages',
+                        url: '=/club/api/v2/{{$parameter.subdomain}}/modules/{{$parameter.moduleId}}/pages',
                     },
                 },
             },
@@ -94,7 +94,7 @@ exports.membersFields = [
         displayOptions: {
             show: {
                 resource: ['members'],
-                operation: ['getStudents', 'getModules', 'getStudentProgress'],
+                operation: ['getStudents', 'getModules', 'getPages', 'getStudentProgress'],
             },
         },
         default: '',

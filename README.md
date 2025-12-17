@@ -28,6 +28,11 @@ Não apenas o básico. Acesso completo a:
 - Eventos e Ingressos (New!)
 - Negociação de Parcelas
 
+### 4. 🤖 Otimizado para AI Agents (v1.1.1)
+- **Metadados de Paginação**: Ative a opção "Incluir Metadados de Paginação" para receber `_metadata` com `has_more`, `page_token` e `items_returned` - perfeito para agentes de IA que precisam navegar por grandes volumes de dados.
+- **Rate Limit Inteligente**: Retry automático com backoff exponencial (1s → 2s → 4s) quando a API da Hotmart retorna erro 429.
+- **Mensagens de Erro Melhoradas**: Orientações claras quando ocorrem erros de rate limit.
+
 ---
 
 ## ⚙️ Modos de Autenticação

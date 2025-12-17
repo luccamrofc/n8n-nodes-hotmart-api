@@ -8,7 +8,12 @@ exports.hotmartApiRequestAllItems = hotmartApiRequestAllItems;
 exports.testHotmartCredentials = testHotmartCredentials;
 const n8n_workflow_1 = require("n8n-workflow");
 const TOKEN_EXPIRY_BUFFER_MS = 5 * 60 * 1000;
+const RATE_LIMIT_RETRY_COUNT = 3;
+const RATE_LIMIT_BASE_DELAY_MS = 1000;
 const tokenCache = new Map();
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 function getBaseUrl(environment) {
     return environment === 'sandbox'
         ? 'https://sandbox.hotmart.com'
@@ -61,7 +66,7 @@ async function getAccessToken(credentials) {
         throw new Error(`Falha ao obter access token da Hotmart: ${error.message}`);
     }
 }
-async function hotmartApiRequest(method, endpoint, body = {}, qs = {}, retry = true) {
+async function hotmartApiRequest(method, endpoint, body = {}, qs = {}, retryCount = 0) {
     const credentials = await this.getCredentials('hotmartApi');
     const accessToken = await getAccessToken(credentials);
     const baseUrl = getBaseUrl(credentials.environment);
@@ -84,12 +89,21 @@ async function hotmartApiRequest(method, endpoint, body = {}, qs = {}, retry = t
     }
     catch (error) {
         const err = error;
-        if (err.statusCode === 401 && retry) {
+        if (err.statusCode === 401 && retryCount === 0) {
             invalidateTokenCache(credentials);
-            return hotmartApiRequest.call(this, method, endpoint, body, qs, false);
+            return hotmartApiRequest.call(this, method, endpoint, body, qs, 1);
+        }
+        if (err.statusCode === 429 && retryCount < RATE_LIMIT_RETRY_COUNT) {
+            const delayMs = RATE_LIMIT_BASE_DELAY_MS * Math.pow(2, retryCount);
+            await delay(delayMs);
+            return hotmartApiRequest.call(this, method, endpoint, body, qs, retryCount + 1);
+        }
+        let errorMessage = err.message || 'Erro desconhecido na requisição';
+        if (err.statusCode === 429) {
+            errorMessage = `Rate limit da API Hotmart excedido após ${RATE_LIMIT_RETRY_COUNT} tentativas. Aguarde alguns minutos antes de tentar novamente. Dica: reduza a frequência de requisições ou use paginação para buscar menos dados por vez.`;
         }
         throw new n8n_workflow_1.NodeApiError(this.getNode(), {
-            message: err.message || 'Erro desconhecido na requisição'
+            message: errorMessage
         });
     }
 }

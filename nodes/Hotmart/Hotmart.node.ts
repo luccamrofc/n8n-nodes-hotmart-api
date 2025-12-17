@@ -119,6 +119,19 @@ export class Hotmart implements INodeType {
                 default: 'production',
                 description: 'O ambiente da Hotmart. IMPORTANTE: Credenciais de Produção só funcionam em Produção e vice-versa.',
             },
+            // Opção de metadados de paginação para AI Agents
+            {
+                displayName: 'Incluir Metadados de Paginação',
+                name: 'includePaginationMetadata',
+                type: 'boolean',
+                default: false,
+                description: 'Retorna metadados úteis para AI Agents junto com os resultados (items_returned, has_more, page_token)',
+                displayOptions: {
+                    show: {
+                        resource: ['sales', 'subscriptions', 'products', 'members', 'events', 'coupons'],
+                    },
+                },
+            },
             // Seletor de recurso
             {
                 displayName: 'Recurso',
@@ -506,11 +519,28 @@ export class Hotmart implements INodeType {
 
                 const response = await this.helpers.httpRequest(requestOptions);
 
+                // Verificar se deve incluir metadados de paginação
+                const includePaginationMetadata = this.getNodeParameter('includePaginationMetadata', i, false) as boolean;
+
                 // Tratar resposta
                 if (response.items && Array.isArray(response.items)) {
-                    // Se resposta tem array de items, retornar cada item
-                    for (const item of response.items) {
-                        returnData.push({ json: item as IDataObject });
+                    if (includePaginationMetadata) {
+                        // Retornar com metadados para AI Agents
+                        returnData.push({
+                            json: {
+                                _metadata: {
+                                    items_returned: response.items.length,
+                                    has_more: !!response.page_token,
+                                    page_token: response.page_token || null,
+                                },
+                                items: response.items,
+                            } as IDataObject,
+                        });
+                    } else {
+                        // Comportamento padrão - cada item separado
+                        for (const item of response.items) {
+                            returnData.push({ json: item as IDataObject });
+                        }
                     }
                 } else {
                     // Retornar resposta completa
