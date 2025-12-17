@@ -70,6 +70,13 @@ O node detecta o tipo de evento e já extrai os campos vitais para a raiz do JSO
 - `checkout_country`: País de compra
 - `user`: Dados do aluno (para eventos do Club)
 
+### 🎨 Personalização Avançada
+
+O node permite personalização total da interface e comportamento do webhook:
+
+- **Path Customizado**: Altere a URL do webhook para algo mais amigável (ex: `/minha-loja` ao invés de `/webhook`).
+- **Renomeação de Saídas**: Ative a opção **"Personalizar Nomes das Saídas"** para dar nomes específicos às portas de saída (ex: mudar de `Compra Única` para `Ebook`). Isso ajuda a manter o workflow visualmente organizado e semântico para sua equipe.
+
 ---
 
 ## 📚 Recursos Disponíveis
